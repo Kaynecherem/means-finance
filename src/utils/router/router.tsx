@@ -21,6 +21,7 @@ const CustomerPay = lazy(() => import('../../pages/Quote/CustomerPay'))
 const CustomerInfo = lazy(() => import('../../pages/Quote/CustomerInfo'))
 const Summary = lazy(() => import('../../pages/Quote/Summary'))
 const BillSummary = lazy(() => import('../../pages/Quote/BillSummary'))
+const DeluxePayment = lazy(() => import('../../pages/Quote/DeluxePayment'))
 const Quote = lazy(() => import('../../pages/Quote'))
 const Collect = lazy(() => import('../../pages/Collect'))
 const CollectSearch = lazy(() => import('../../pages/Collect/Search'))
@@ -126,6 +127,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'bill-summary',
                                 element: <BillSummary />
+                            },
+                            {
+                                path: 'deluxe-payment',
+                                element: <DeluxePayment />
                             },
                             {
                                 path: 'customer-info',

@@ -25,7 +25,7 @@ const BillSummary: React.FC = () => {
         navigate('/agency/quote/bill-type')
     }
     const handleNextClick = () => {
-        navigate('/agency/quote/customer-info')
+        navigate('/agency/quote/deluxe-payment')
     }
 
     return (
