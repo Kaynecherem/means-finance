@@ -1,0 +1,9 @@
+export const vinRegEx = /\b[A-HJ-NPR-Z0-9]{17}\b/gm;
+export const emailRegEx = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/gm;
+export const visaRegEx = /^4[0-9]{12}(?:[0-9]{3})?$/;
+export const mastercardRegEx = /^5[1-5][0-9]{14}$/;
+export const amexRegEx = /^3[47][0-9]{13}$/;
+export const discoverRegEx = /^6(?:011|5[0-9]{2})[0-9]{12}$/;
+export const dinersRegEx = /^3(?:0[0-5]|[68][0-9])[0-9]{11,17}$/;
+export const jcbRegEx = /^(?:2131|1800|35\d{3})\d{11}$/;
+export const passwordRegEx = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/
