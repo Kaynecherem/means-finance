@@ -72,11 +72,11 @@ describe('VinInput Component', () => {
         fireEvent.click(addButton);
 
         await waitFor(() => {
-            expect(mockOnChange).toHaveBeenCalledWith(expect.arrayContaining([
-                {
-                    vin: ""
-                }
-            ]));
+            expect(mockOnChange).toHaveBeenLastCalledWith(
+                expect.arrayContaining([
+                    expect.objectContaining({ vin: "" })
+                ])
+            );
         });
     });
 

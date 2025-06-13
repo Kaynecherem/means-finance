@@ -23,6 +23,9 @@ const steps = [
         route: '/bill-summary'
     },
     {
+        route: '/deluxe-payment'
+    },
+    {
         route: '/customer-info'
     },
     {
