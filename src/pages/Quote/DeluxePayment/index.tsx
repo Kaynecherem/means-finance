@@ -12,8 +12,9 @@ const DeluxePayment: React.FC = () => {
     const deluxeToken = useSelector(({ auth }: RootState) => (auth.agency as any)?.deluxe_partner_token);
 
     useEffect(() => {
+        const allowedOrigin = 'https://hostedpaymentform.deluxe.com';
         const handleMessage = (e: MessageEvent) => {
-            if (e.data === 'deluxe_success') {
+            if (e.origin === allowedOrigin && e.data === 'deluxe_success') {
                 alert('Payment method added successfully');
                 navigate('/agency/quote/customer-info');
             }
