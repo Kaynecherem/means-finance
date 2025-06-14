@@ -33,7 +33,7 @@ describe('DeluxePayment Page', () => {
     beforeEach(() => {
         store = mockStore({
             auth: {
-                agency: { deluxe_partner_token: TOKEN },
+                agency: { deluxePartnerToken: TOKEN },
             },
         });
         (useNavigate as jest.Mock).mockReturnValue(navigate);
@@ -77,7 +77,7 @@ describe('DeluxePayment Page', () => {
             </ThemeProvider>
         );
 
-        window.postMessage('deluxe_success', '*');
+        window.dispatchEvent(new MessageEvent('message', { data: { event: 'deluxe_success', payload: { data: 'x' } }, origin: 'https://hostedpaymentform.deluxe.com' }));
 
         await waitFor(() => {
             expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info');
