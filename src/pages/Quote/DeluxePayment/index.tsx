@@ -4,8 +4,11 @@ import { LuArrowRight } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import SubmitButton from '../../../components/Form/SubmitButton';
+import { useDirectUs } from '../../../components/DirectUs/DirectusContext';
 import { resetQuote } from '../../../utils/redux/slices/quoteSlice';
+import { updateAgency } from '../../../utils/redux/slices/authSlice';
 import { RootState } from '../../../utils/redux/store';
+import { getAgencyDeluxePartnerToken } from '../../../utils/apis/directus';
 import { PageHeader } from '../../style';
 
 const DeluxePayment: React.FC = () => {
@@ -13,6 +16,22 @@ const DeluxePayment: React.FC = () => {
     const dispatch = useDispatch();
     const [showEmbed, setShowEmbed] = useState(false);
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
+    const agencyId = useSelector(({ auth }: RootState) => auth.agency?.id);
+    const { directusClient } = useDirectUs();
+
+    useEffect(() => {
+        const fetchToken = async () => {
+            if (!deluxeToken && agencyId) {
+                try {
+                    const token = await getAgencyDeluxePartnerToken(directusClient, agencyId);
+                    dispatch(updateAgency({ deluxePartnerToken: token }));
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+        fetchToken();
+    }, [deluxeToken, agencyId, directusClient, dispatch]);
 
     const handleResetClick = () => {
         dispatch(resetQuote());
