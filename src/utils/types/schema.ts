@@ -16,6 +16,7 @@ export interface DirectusAgency {
     country: string | null
     postal_code: string | null
     routing_number: string | null
+    deluxe_partner_token: string | null
 }
 
 export interface DirectusBill {
