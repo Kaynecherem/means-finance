@@ -1,20 +1,33 @@
 import { Col, Row } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+import { LuArrowRight } from 'react-icons/lu';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import SubmitButton from '../../../components/Form/SubmitButton';
+import { resetQuote } from '../../../utils/redux/slices/quoteSlice';
 import { RootState } from '../../../utils/redux/store';
 import { PageHeader } from '../../style';
 
 const DeluxePayment: React.FC = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const [showEmbed, setShowEmbed] = useState(false);
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
+
+    const handleResetClick = () => {
+        dispatch(resetQuote());
+        navigate('/agency/quote/bill-type');
+    };
+
+    const handleNextClick = () => {
+        navigate('/agency/quote/customer-info');
+    };
 
     useEffect(() => {
         const allowedOrigin = 'https://hostedpaymentform.deluxe.com';
         const handleMessage = (e: MessageEvent) => {
-            if (e.origin === allowedOrigin && e.data === 'deluxe_success') {
+            if (e.origin === allowedOrigin && e.data?.event === 'deluxe_success') {
+                sessionStorage.setItem('deluxeData', JSON.stringify(e.data.payload));
                 alert('Payment method added successfully');
                 navigate('/agency/quote/customer-info');
             }
@@ -66,7 +79,7 @@ const DeluxePayment: React.FC = () => {
   HostedForm.init(options, {
     onSuccess: function(data) {
       console.log(JSON.stringify(data));
-      window.parent.postMessage('deluxe_success', '*');
+      window.parent.postMessage({event:'deluxe_success', payload:data}, '*');
     },
     onFailure: function(data) { console.log(JSON.stringify(data)); },
     onInvalid: function(data) { console.log(JSON.stringify(data)); }
@@ -96,6 +109,16 @@ const DeluxePayment: React.FC = () => {
                         style={{ width: '100%', border: 'none', height: '700px' }}
                     />
                 )}
+            </Col>
+            <Col span={24} style={{ marginTop: '32px' }}>
+                <Row gutter={[40, 0]} justify={'center'}>
+                    <Col>
+                        <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
+                    </Col>
+                    <Col>
+                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
+                    </Col>
+                </Row>
             </Col>
         </Row>
     );

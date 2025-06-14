@@ -60,7 +60,9 @@ interface CustomUser {
     phone: string | null
 }
 
-export interface CustomDirectusUser extends DirectusUser, CustomUser { }
+export interface CustomDirectusUser extends DirectusUser, CustomUser {
+    [key: string]: any;
+}
 
 export interface DirectusPayment {
     id: number
