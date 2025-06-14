@@ -5,6 +5,14 @@ import { ThemeProvider } from 'styled-components';
 import DeluxePayment from '.';
 import { useNavigate } from 'react-router-dom';
 
+jest.mock('../../../components/DirectUs/DirectusContext', () => ({
+    useDirectUs: () => ({ directusClient: {} }),
+}));
+
+jest.mock('../../../utils/apis/directus', () => ({
+    getAgencyDeluxePartnerToken: jest.fn(() => Promise.resolve('TOKEN123')),
+}));
+
 jest.mock('react-router-dom', () => ({
     ...jest.requireActual('react-router-dom'),
     useNavigate: jest.fn(),

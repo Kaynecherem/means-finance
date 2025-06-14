@@ -47,11 +47,20 @@ export const authSlice = createSlice({
                 }
             }
         },
+        updateAgency(state, action: PayloadAction<Partial<Agency>>) {
+            return {
+                ...state,
+                agency: {
+                    ...state.agency,
+                    ...action.payload,
+                } as Agency | undefined,
+            }
+        },
         logoutAction() {
             return cloneDeep(authReducerInitialState)
         },
     },
 });
 
-export const { agencyLoginAction, customerLoginAction, updateUser, logoutAction } = authSlice.actions;
+export const { agencyLoginAction, customerLoginAction, updateUser, updateAgency, logoutAction } = authSlice.actions;
 export default authSlice.reducer;

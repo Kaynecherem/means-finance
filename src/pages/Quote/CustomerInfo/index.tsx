@@ -20,7 +20,9 @@ import { emailRegEx } from "../../../utils/contants/regex";
 import { BillTypeEnum, CustomerPayFrequency, QuoteFrequency } from '../../../utils/enums/common';
 import billDueCalculation from '../../../utils/helpers/billDueCalculation';
 import { updateQuote } from "../../../utils/redux/slices/quoteSlice";
+import { updateAgency } from '../../../utils/redux/slices/authSlice';
 import { RootState } from '../../../utils/redux/store';
+import { getAgencyDeluxePartnerToken } from '../../../utils/apis/directus';
 import { CalculatedQuoteInstallments, VIN } from "../../../utils/types/common";
 import { InternalErrors } from "../../../utils/types/errors";
 import { CustomDirectusUser } from "../../../utils/types/schema";
@@ -65,6 +67,20 @@ const CustomerInfo: React.FC = () => {
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken)
     const [calenderDays, setCalenderDays] = useState<number>()
     const [userCardsFetching, setUserCardsFetching] = useState(false)
+
+    useEffect(() => {
+        const fetchToken = async () => {
+            if (!deluxeToken && agencyId) {
+                try {
+                    const token = await getAgencyDeluxePartnerToken(directusClient, agencyId)
+                    dispatch(updateAgency({ deluxePartnerToken: token }))
+                } catch (err) {
+                    console.error(err)
+                }
+            }
+        }
+        fetchToken()
+    }, [deluxeToken, agencyId, directusClient, dispatch])
     const fetchUserCards = useCallback(async (customerId: string) => {
         if (agencyId) {
             try {

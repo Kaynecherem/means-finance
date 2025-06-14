@@ -57,6 +57,15 @@ export const logout = async (client: DirectusContextClient) => {
 
     }
 }
+
+export const getAgencyDeluxePartnerToken = async (client: DirectusContextClient, agencyId: number) => {
+    try {
+        const agency = await client.request(readItem('agency', agencyId, { fields: ['deluxe_partner_token'] }));
+        return (agency as DirectusAgency).deluxe_partner_token;
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError);
+    }
+}
 export const findCustomerByEmail = async (client: DirectusContextClient, email: string) => {
     try {
         const users = await client.request(readUsers({
