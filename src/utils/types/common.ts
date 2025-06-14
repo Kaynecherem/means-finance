@@ -40,6 +40,7 @@ export type Agency = {
     country: string | null
     postalCode: string | null
     routingNumber: string | null
+    deluxePartnerToken: string | null
 }
 
 export type User = {

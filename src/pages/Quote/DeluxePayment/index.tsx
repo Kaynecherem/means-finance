@@ -9,7 +9,7 @@ import { PageHeader } from '../../style';
 const DeluxePayment: React.FC = () => {
     const navigate = useNavigate();
     const [showEmbed, setShowEmbed] = useState(false);
-    const deluxeToken = useSelector(({ auth }: RootState) => (auth.agency as any)?.deluxe_partner_token);
+    const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
 
     useEffect(() => {
         const handleMessage = (e: MessageEvent) => {
