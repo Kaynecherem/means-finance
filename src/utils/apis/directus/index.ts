@@ -794,3 +794,24 @@ export const fetchPaymentWithToken = async (
     }
 
 }
+
+export const saveDeluxeSession = async (
+    client: DirectusContextClient,
+    payload: {
+        agency: number,
+        customer: string,
+        deluxeData: unknown
+    }) => {
+    try {
+        const res = await client.request(triggerFlow('POST', '47a37d05-0c1d-4b24-8f0b-000000000000', payload));
+
+        if (res.errors && res.errors.length > 0) {
+            throw res;
+        } else if (!res.errors && res.status > 299) {
+            throw formatError(res);
+        }
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError);
+    }
+
+}

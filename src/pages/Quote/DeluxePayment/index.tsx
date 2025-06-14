@@ -14,7 +14,7 @@ import { PageHeader } from '../../style';
 const DeluxePayment: React.FC = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const [showEmbed, setShowEmbed] = useState(false);
+    const [isPaymentAdded, setIsPaymentAdded] = useState(false);
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
     const agencyId = useSelector(({ auth }: RootState) => auth.agency?.id);
     const { directusClient } = useDirectUs();
@@ -48,7 +48,7 @@ const DeluxePayment: React.FC = () => {
             if (e.origin === allowedOrigin && e.data?.event === 'deluxe_success') {
                 sessionStorage.setItem('deluxeData', JSON.stringify(e.data.payload));
                 alert('Payment method added successfully');
-                navigate('/agency/quote/customer-info');
+                setIsPaymentAdded(true);
             }
         };
         window.addEventListener('message', handleMessage);
@@ -113,21 +113,12 @@ const DeluxePayment: React.FC = () => {
             <Col span={24} style={{ textAlign: 'center' }}>
                 <PageHeader level={2}>Add Customer To Deluxe</PageHeader>
             </Col>
-            <Col span={24} style={{ textAlign: 'center', marginTop: '24px' }}>
-                {!showEmbed && (
-                    <SubmitButton onClick={() => setShowEmbed(true)}>
-                        Add Customer to Deluxe
-                    </SubmitButton>
-                )}
-            </Col>
             <Col span={24}>
-                {showEmbed && (
-                    <iframe
-                        title="Deluxe Payment"
-                        srcDoc={iframeDoc}
-                        style={{ width: '100%', border: 'none', height: '700px' }}
-                    />
-                )}
+                <iframe
+                    title="Deluxe Payment"
+                    srcDoc={iframeDoc}
+                    style={{ width: '100%', border: 'none', height: '700px' }}
+                />
             </Col>
             <Col span={24} style={{ marginTop: '32px' }}>
                 <Row gutter={[40, 0]} justify={'center'}>
@@ -135,7 +126,7 @@ const DeluxePayment: React.FC = () => {
                         <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
+                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>Next</SubmitButton>
                     </Col>
                 </Row>
             </Col>

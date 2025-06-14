@@ -48,7 +48,7 @@ describe('DeluxePayment Page', () => {
         window.alert = jest.fn();
     });
 
-    it('renders "Add Customer to Deluxe" button', () => {
+    it('shows iframe with token and disabled next button initially', () => {
         render(
             <ThemeProvider theme={mockTheme}>
                 <Provider store={store}>
@@ -56,27 +56,16 @@ describe('DeluxePayment Page', () => {
                 </Provider>
             </ThemeProvider>
         );
-
-        expect(screen.getByRole('button', { name: /Add Customer to Deluxe/i })).toBeInTheDocument();
-    });
-
-    it('shows iframe with token after clicking the button', () => {
-        render(
-            <ThemeProvider theme={mockTheme}>
-                <Provider store={store}>
-                    <DeluxePayment />
-                </Provider>
-            </ThemeProvider>
-        );
-
-        fireEvent.click(screen.getByRole('button', { name: /Add Customer to Deluxe/i }));
 
         const iframe = screen.getByTitle('Deluxe Payment') as HTMLIFrameElement;
         expect(iframe).toBeInTheDocument();
         expect(iframe.getAttribute('srcdoc')).toContain(TOKEN);
+
+        expect(screen.getByRole('button', { name: /Next/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /Start Over/i })).toBeInTheDocument();
     });
 
-    it('navigates on deluxe_success message', async () => {
+    it('enables next button on success message and navigates when clicked', async () => {
         render(
             <ThemeProvider theme={mockTheme}>
                 <Provider store={store}>
@@ -85,10 +74,17 @@ describe('DeluxePayment Page', () => {
             </ThemeProvider>
         );
 
+        const nextButton = screen.getByRole('button', { name: /Next/i });
+        expect(nextButton).toBeDisabled();
+
         window.dispatchEvent(new MessageEvent('message', { data: { event: 'deluxe_success', payload: { data: 'x' } }, origin: 'https://hostedpaymentform.deluxe.com' }));
 
         await waitFor(() => {
-            expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info');
+            expect(nextButton).toBeEnabled();
         });
+
+        fireEvent.click(nextButton);
+
+        expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info');
     });
 });
