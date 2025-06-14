@@ -56,7 +56,8 @@ const DeluxePayment: React.FC = () => {
 <script>
   var options = {
     containerId: "mycontainer",
-    xtoken: "${deluxeToken}",
+    /* xtoken: "${deluxeToken}",*/
+    xtoken: "4F895390-8FE3-4022-BDFC-998C4D6B9F2E",
     xrtype: "Create Vault",
     xpm: "0",
     xdisplayvafields: "true",

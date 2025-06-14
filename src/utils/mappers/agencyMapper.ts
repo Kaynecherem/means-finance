@@ -16,7 +16,7 @@ const agencyMapper = (directusAgency: DirectusAgency): Agency => {
         country: directusAgency.country,
         postalCode: directusAgency.postal_code,
         routingNumber: directusAgency.routing_number,
-        deluxePartnerToken: directusAgency.deluxe_partner_token,
+        deluxePartnerToken: directusAgency.deluxe_partner_token
     }
 }
 export default agencyMapper
