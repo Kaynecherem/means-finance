@@ -118,7 +118,7 @@ const DeluxePayment: React.FC = () => {
                 <iframe
                     title="Deluxe Payment"
                     srcDoc={iframeDoc}
-                    style={{ width: '100%', border: 'none', height: '700px' }}
+                    style={{ width: '100%', border: 'none', height: '100vh' }}
                 />
             </Col>
             <Col span={24} style={{ marginTop: '32px' }}>
@@ -127,7 +127,7 @@ const DeluxePayment: React.FC = () => {
                         <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>Next</SubmitButton>
+                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
                     </Col>
                 </Row>
             </Col>
