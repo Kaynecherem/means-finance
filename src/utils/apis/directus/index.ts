@@ -800,7 +800,9 @@ export const saveDeluxeSession = async (
     payload: {
         agency: number,
         customer: string,
-        deluxeData: unknown
+        deluxeData: unknown,
+        deluxeCustomerId?: string | null,
+        deluxeVaultId?: string | null
     }) => {
     try {
         const res = await client.request(triggerFlow('POST', '47a37d05-0c1d-4b24-8f0b-000000000000', payload));
