@@ -4,18 +4,14 @@ import { LuMail, LuPhone, LuUser } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import { useDirectUs } from '../../../components/DirectUs/DirectusContext';
-import CardNumberInput from '../../../components/Form/CardNumberInput';
-import CVVInput from '../../../components/Form/CVVInput';
 import DateSelector from '../../../components/Form/DateSelector';
-import ExpiryDateInput from '../../../components/Form/ExpiryDateInput';
 import FormItem from "../../../components/Form/FormItem";
 import PhoneField from "../../../components/Form/PhoneField";
 import SelectField from "../../../components/Form/SelectField";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TextField from "../../../components/Form/TextField";
 import VinInput from "../../../components/Form/VinInput/VinInput";
-import { LoadingSpinner } from "../../../components/LoadingSpinner";
-import { addUserAccount, addUserCard, createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId, getCustomerPaymentSources, registerCustomerOnPayArc, saveDeluxeSession } from '../../../utils/apis/directus/index';
+import { createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId, registerCustomerOnPayArc, saveDeluxeSession } from '../../../utils/apis/directus/index';
 import { emailRegEx } from "../../../utils/contants/regex";
 import { BillTypeEnum, CustomerPayFrequency, QuoteFrequency } from '../../../utils/enums/common';
 import billDueCalculation from '../../../utils/helpers/billDueCalculation';
@@ -24,8 +20,6 @@ import { RootState } from '../../../utils/redux/store';
 import { CalculatedQuoteInstallments, VIN } from "../../../utils/types/common";
 import { InternalErrors } from "../../../utils/types/errors";
 import { CustomDirectusUser } from "../../../utils/types/schema";
-import cardNumberValidator from '../../../utils/validators/cardNumberValidator';
-import expiryDateValidator from '../../../utils/validators/expiryDateValidator';
 import phoneValidator from "../../../utils/validators/phoneValidator";
 import { PageHeader, PageSubHeader } from "../../style";
 import { monthDropDownOptions } from "./constants";
@@ -36,14 +30,6 @@ type CustomerInfoForm = {
     customerPhone?: string
     policyId?: string
     vins: VIN[],
-    cardNumber?: string,
-    expiry?: {
-        month: string,
-        year: string
-    },
-    cvv?: string,
-    routing?: string,
-    account?: string
 }
 
 const CustomerInfo: React.FC = () => {
@@ -55,40 +41,11 @@ const CustomerInfo: React.FC = () => {
     const [form] = Form.useForm()
     const [selectedCustomer, setSelectedCustomer] = useState<CustomDirectusUser | null>(null)
     const [loading, setLoading] = useState(false)
-    const [showCardDetails, setShowCardDetails] = useState(false)
-    const [showAccountDetails, setShowAccountDetails] = useState(false)
     const quote = useSelector(
         ({ quote: stateQuote }: RootState) => stateQuote
     )
     const agencyId = useSelector(({ auth }: RootState) => auth.agency?.id)
     const [calenderDays, setCalenderDays] = useState<number>()
-    const [userCardsFetching, setUserCardsFetching] = useState(false)
-    const fetchUserCards = useCallback(async (customerId: string) => {
-        if (agencyId) {
-            try {
-                setUserCardsFetching(true)
-                const { cards, bank_accounts } = await getCustomerPaymentSources(directusClient, {
-                    agency: agencyId,
-                    customer_id: customerId
-                })
-                if (cards.length > 0) {
-                    setShowCardDetails(false)
-                } else {
-                    setShowCardDetails(true)
-                }
-
-                if (bank_accounts.length > 0) {
-                    setShowAccountDetails(false)
-                } else {
-                    setShowAccountDetails(true)
-                }
-            } catch (error) {
-                message.error((error as InternalErrors).message)
-            } finally {
-                setUserCardsFetching(false)
-            }
-        }
-    }, [agencyId, directusClient])
     const fetchUserInformation = useCallback(async (email: string) => {
         try {
             if ((new RegExp(emailRegEx)).test(email)) {
@@ -112,13 +69,10 @@ const CustomerInfo: React.FC = () => {
                             value: customer.phone
                         }
                     ])
-                    fetchUserCards(customer.id)
                     return
                 }
             }
             setSelectedCustomer(null)
-            setShowCardDetails(true)
-            setShowAccountDetails(true)
             form.setFields([
                 {
                     name: 'customerFirstName',
@@ -141,7 +95,7 @@ const CustomerInfo: React.FC = () => {
             setLoading(false)
         }
 
-    }, [directusClient, fetchUserCards, form])
+    }, [directusClient, form])
 
     const handleEmailBlur = (event: React.FocusEvent<HTMLInputElement, Element>) => {
         const email = event.target.value
@@ -221,10 +175,14 @@ const CustomerInfo: React.FC = () => {
                 if (deluxeDataStr) {
                     try {
                         const deluxeInfo = JSON.parse(deluxeDataStr)
+                        const deluxeCustomerId = deluxeInfo.customerId || deluxeInfo.customer_id || deluxeInfo.CustomerId
+                        const deluxeVaultId = deluxeInfo.vaultId || deluxeInfo.vault_id || deluxeInfo.VaultId
                         await saveDeluxeSession(directusClient, {
                             agency: agencyId,
                             customer: customer.id,
-                            deluxeData: deluxeInfo
+                            deluxeData: deluxeInfo,
+                            deluxeCustomerId,
+                            deluxeVaultId
                         })
                     } catch (err) {
                         console.error(err)
@@ -234,25 +192,6 @@ const CustomerInfo: React.FC = () => {
                     agency: agencyId,
                     customer: customer.id
                 })
-                if (showCardDetails && values.cardNumber && values.cvv && values.expiry) {
-                    await addUserCard(directusClient, {
-                        agency: agencyId,
-                        cardNumber: values.cardNumber,
-                        expMonth: values.expiry.month,
-                        expYear: values.expiry.year,
-                        cvv: values.cvv,
-                        customer_id: customer.id,
-                    })
-
-                }
-                if (showAccountDetails && values.account && values.routing) {
-                    await addUserAccount(directusClient, {
-                        agency: agencyId,
-                        accountNumber: values.account,
-                        routingNumber: values.routing,
-                        customer_id: customer.id,
-                    })
-                }
                 const bill = await createBill(directusClient, generateBillPayload(customer, values, calculatedQuoteInfo))
 
                 if (values.vins?.length > 0) {
@@ -275,7 +214,7 @@ const CustomerInfo: React.FC = () => {
         } finally {
             setIsSaving(false)
         }
-    }, [agencyId, directusClient, dispatch, generateBillPayload, getCustomer, navigate, quote, showAccountDetails, showCardDetails, validateForm])
+    }, [agencyId, directusClient, dispatch, generateBillPayload, getCustomer, navigate, quote, validateForm])
 
     return (
         <Form requiredMark={false} layout="vertical" initialValues={quote} onFinish={handleNextClick} form={form}>
@@ -349,87 +288,6 @@ const CustomerInfo: React.FC = () => {
                                 <TextField placeholder={quote.quoteType === BillTypeEnum.AUTO_INSURANCE ? "Policy ID" : "Account Number"} />
                             </FormItem>
                         </Col>
-                        {userCardsFetching &&
-                            <Col span={24}>
-                                <LoadingSpinner />
-                            </Col>
-
-                        }
-                        {showCardDetails && !userCardsFetching &&
-                            <>
-                                <Col span={24}>
-                                    <PageSubHeader level={3}>
-                                        Card Details
-                                    </PageSubHeader>
-                                </Col>
-                                <Col span={24}>
-                                    <FormItem
-                                        label="Card Number"
-                                        name="cardNumber"
-                                        rules={[
-                                            {
-                                                required: true
-                                            },
-                                            {
-                                                validator: cardNumberValidator
-                                            }
-                                        ]}
-                                    >
-                                        <CardNumberInput />
-                                    </FormItem>
-                                </Col>
-                                <Col span={12}>
-                                    <FormItem
-                                        label="Exp"
-                                        name="expiry"
-                                        rules={[
-                                            {
-                                                validator: expiryDateValidator
-                                            }
-                                        ]}
-                                    >
-                                        <ExpiryDateInput />
-                                    </FormItem>
-                                </Col>
-                                <Col span={12}>
-                                    <FormItem
-                                        label="CVV"
-                                        name="cvv"
-                                        rules={[{ required: true }]}
-
-                                    >
-                                        <CVVInput />
-                                    </FormItem>
-                                </Col>
-                            </>
-
-                        }
-                        {showAccountDetails && !userCardsFetching &&
-                            <>
-                                <Col span={24}>
-                                    <PageSubHeader level={3}>
-                                        Bank Account
-                                    </PageSubHeader>
-                                </Col>
-                                <Col span={24}>
-                                    <FormItem
-                                        label="Routing #"
-                                        name="routing"
-                                    >
-                                        <TextField />
-                                    </FormItem>
-                                </Col>
-                                <Col span={24}>
-                                    <FormItem
-                                        label="Account #"
-                                        name="account"
-                                    >
-                                        <TextField />
-                                    </FormItem>
-                                </Col>
-                            </>
-
-                        }
                         {(quote.quoteType === BillTypeEnum.AUTO_INSURANCE) &&
                             <>
                                 <Col span={24}>
@@ -477,7 +335,7 @@ const CustomerInfo: React.FC = () => {
                     </Row>
                 </Col>
                 <Col span={24} style={{ marginTop: "44px", textAlign: 'center', marginBottom: "10px" }}>
-                    <SubmitButton htmlType="submit" loading={isSaving} disabled={userCardsFetching}>Sign Up</SubmitButton>
+                    <SubmitButton htmlType="submit" loading={isSaving}>Sign Up</SubmitButton>
                 </Col>
             </Row >
         </Form >
