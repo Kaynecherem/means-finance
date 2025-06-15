@@ -43,9 +43,8 @@ const DeluxePayment: React.FC = () => {
     };
 
     useEffect(() => {
-        const allowedOrigin = 'https://hostedpaymentform.deluxe.com';
         const handleMessage = (e: MessageEvent) => {
-            if (e.origin === allowedOrigin && e.data?.event === 'deluxe_success') {
+            if (e.data?.event === 'deluxe_success') {
                 sessionStorage.setItem('deluxeData', JSON.stringify(e.data.payload));
                 alert('Payment method added successfully');
                 setIsPaymentAdded(true);
