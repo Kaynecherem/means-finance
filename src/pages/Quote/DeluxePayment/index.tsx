@@ -88,8 +88,7 @@ const DeluxePayment: React.FC = () => {
 <script>
   var options = {
     containerId: "mycontainer",
-    /* xtoken: "${deluxeToken}",*/
-    xtoken: "4F895390-8FE3-4022-BDFC-998C4D6B9F2E",
+    xtoken: "${deluxeToken}",
     xrtype: "Create Vault",
     xpm: "0",
     xdisplayvafields: "true",
@@ -127,7 +126,8 @@ const DeluxePayment: React.FC = () => {
                         <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>Next</SubmitButton>
+                        {/*<SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>Next</SubmitButton>*/}
+                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
                     </Col>
                 </Row>
             </Col>
