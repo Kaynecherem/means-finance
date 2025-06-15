@@ -77,7 +77,7 @@ describe('DeluxePayment Page', () => {
         const nextButton = screen.getByRole('button', { name: /Next/i });
         expect(nextButton).toBeDisabled();
 
-        window.dispatchEvent(new MessageEvent('message', { data: { event: 'deluxe_success', payload: { data: 'x' } }, origin: 'https://hostedpaymentform.deluxe.com' }));
+        window.dispatchEvent(new MessageEvent('message', { data: { event: 'deluxe_success', payload: { data: 'x' } }, origin: 'null' }));
 
         await waitFor(() => {
             expect(nextButton).toBeEnabled();
