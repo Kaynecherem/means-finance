@@ -11,7 +11,7 @@ import SelectField from "../../../components/Form/SelectField";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TextField from "../../../components/Form/TextField";
 import VinInput from "../../../components/Form/VinInput/VinInput";
-import { createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId, registerCustomerOnPayArc, saveDeluxeSession } from '../../../utils/apis/directus/index';
+import { createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId, registerCustomerOnPayArc } from '../../../utils/apis/directus/index';
 import { emailRegEx } from "../../../utils/contants/regex";
 import { BillTypeEnum, CustomerPayFrequency, QuoteFrequency } from '../../../utils/enums/common';
 import billDueCalculation from '../../../utils/helpers/billDueCalculation';
@@ -113,7 +113,7 @@ const CustomerInfo: React.FC = () => {
             setCalenderDays(month.days)
         }
     }, [quote.dueMonth])
-    const getCustomer = useCallback(async (values: CustomerInfoForm) => {
+    const getCustomer = useCallback(async (values: CustomerInfoForm, deluxe?: { deluxeCustomerId?: string, deluxeVaultId?: string }) => {
         let customer: CustomDirectusUser
         if (selectedCustomer) {
             customer = selectedCustomer
@@ -121,7 +121,9 @@ const CustomerInfo: React.FC = () => {
             customer = await findOrCreateCustomerSearchByEmail(directusClient, values.customerEmail, {
                 first_name: values.customerFirstName,
                 last_name: values.customerLastName,
-                phone: values.customerPhone
+                phone: values.customerPhone,
+                deluxe_customer_id: deluxe?.deluxeCustomerId,
+                deluxe_vault_id: deluxe?.deluxeVaultId
             })
         }
         return customer
@@ -163,7 +165,20 @@ const CustomerInfo: React.FC = () => {
 
 
             if (values.customerEmail && agencyId) {
-                const customer: CustomDirectusUser = await getCustomer(values)
+                const deluxeDataStr = sessionStorage.getItem('deluxeData')
+                let deluxeCustomerId: string | undefined
+                let deluxeVaultId: string | undefined
+                if (deluxeDataStr) {
+                    try {
+                        const deluxeInfo = JSON.parse(deluxeDataStr)
+                        deluxeCustomerId = deluxeInfo.customerId || deluxeInfo.customer_id || deluxeInfo.CustomerId
+                        deluxeVaultId = deluxeInfo.vaultId || deluxeInfo.vault_id || deluxeInfo.VaultId
+                    } catch (err) {
+                        console.error(err)
+                    }
+                }
+
+                const customer: CustomDirectusUser = await getCustomer(values, { deluxeCustomerId, deluxeVaultId })
                 const alreadyDueBills = await getCustomerDueBillsByCustomerId(directusClient, customer.id)
                 if (alreadyDueBills && alreadyDueBills.length > 0) {
                     message.error("Customer is already having one due policy.")
@@ -171,23 +186,6 @@ const CustomerInfo: React.FC = () => {
                 }
                 const calculatedQuoteInfo = billDueCalculation(quote)
 
-                const deluxeDataStr = sessionStorage.getItem('deluxeData')
-                if (deluxeDataStr) {
-                    try {
-                        const deluxeInfo = JSON.parse(deluxeDataStr)
-                        const deluxeCustomerId = deluxeInfo.customerId || deluxeInfo.customer_id || deluxeInfo.CustomerId
-                        const deluxeVaultId = deluxeInfo.vaultId || deluxeInfo.vault_id || deluxeInfo.VaultId
-                        await saveDeluxeSession(directusClient, {
-                            agency: agencyId,
-                            customer: customer.id,
-                            deluxeData: deluxeInfo,
-                            deluxeCustomerId,
-                            deluxeVaultId
-                        })
-                    } catch (err) {
-                        console.error(err)
-                    }
-                }
                 await registerCustomerOnPayArc(directusClient, {
                     agency: agencyId,
                     customer: customer.id
