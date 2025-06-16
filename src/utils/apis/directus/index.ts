@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { aggregate, createItem, createItems, createUser, DirectusRole, readItem, readItems, readMe, readRoles, readUsers, triggerFlow, updateItem, updateMe } from '@directus/sdk';
+import { aggregate, createItem, createItems, createUser, DirectusRole, readItem, readItems, readMe, readRoles, readUsers, triggerFlow, updateItem, updateMe, updateUser } from '@directus/sdk';
 import moment from 'moment';
 import { Roles } from '../../enums/common';
 import InvalidCredentialsError from '../../errors/InvalidCredentials';
@@ -101,6 +101,21 @@ export const findCustomerByPhone = async (client: DirectusContextClient, phone: 
 export const findOrCreateCustomerSearchByEmail = async (client: DirectusContextClient, email: string, data?: Partial<CustomDirectusUser> = {}) => {
     const user = await findCustomerByEmail(client, email)
     if (user) {
+        if (data?.deluxe_customer_id || data?.deluxe_vault_id) {
+            try {
+                await client.request(updateUser(user.id, {
+                    deluxe_customer_id: data?.deluxe_customer_id,
+                    deluxe_vault_id: data?.deluxe_vault_id
+                }))
+                return {
+                    ...user,
+                    deluxe_customer_id: data?.deluxe_customer_id ?? user.deluxe_customer_id,
+                    deluxe_vault_id: data?.deluxe_vault_id ?? user.deluxe_vault_id
+                } as CustomDirectusUser
+            } catch (error) {
+                throw parseDirectUsErrors(error as DirectusError)
+            }
+        }
         return user
     }
 
