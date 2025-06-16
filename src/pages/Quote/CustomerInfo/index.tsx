@@ -114,20 +114,16 @@ const CustomerInfo: React.FC = () => {
         }
     }, [quote.dueMonth])
     const getCustomer = useCallback(async (values: CustomerInfoForm, deluxe?: { deluxeCustomerId?: string, deluxeVaultId?: string }) => {
-        let customer: CustomDirectusUser
-        if (selectedCustomer) {
-            customer = selectedCustomer
-        } else {
-            customer = await findOrCreateCustomerSearchByEmail(directusClient, values.customerEmail, {
-                first_name: values.customerFirstName,
-                last_name: values.customerLastName,
-                phone: values.customerPhone,
-                deluxe_customer_id: deluxe?.deluxeCustomerId,
-                deluxe_vault_id: deluxe?.deluxeVaultId
-            })
-        }
+        const customer = await findOrCreateCustomerSearchByEmail(directusClient, values.customerEmail, {
+            first_name: values.customerFirstName,
+            last_name: values.customerLastName,
+            phone: values.customerPhone,
+            deluxe_customer_id: deluxe?.deluxeCustomerId,
+            deluxe_vault_id: deluxe?.deluxeVaultId
+        })
+
         return customer
-    }, [directusClient, selectedCustomer])
+    }, [directusClient])
 
     const validateForm = useCallback((values: CustomerInfoForm) => {
         if (quote.quoteType === BillTypeEnum.AUTO_INSURANCE && values.vins.some(vin => vin.errorCode !== '0')) {
@@ -171,8 +167,8 @@ const CustomerInfo: React.FC = () => {
                 if (deluxeDataStr) {
                     try {
                         const deluxeInfo = JSON.parse(deluxeDataStr)
-                        deluxeCustomerId = deluxeInfo.customerId || deluxeInfo.customer_id || deluxeInfo.CustomerId
-                        deluxeVaultId = deluxeInfo.vaultId || deluxeInfo.vault_id || deluxeInfo.VaultId
+                        deluxeCustomerId = deluxeInfo?.data?.customerId
+                        deluxeVaultId = deluxeInfo?.data?.vaultId
                     } catch (err) {
                         console.error(err)
                     }
