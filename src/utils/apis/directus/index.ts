@@ -74,7 +74,7 @@ export const findCustomerByEmail = async (client: DirectusContextClient, email: 
             },
             fields: ['*', 'role.*']
         }));
-        if (userMapper.length > 0) {
+        if (users.length > 0) {
             return users[0] as CustomDirectusUser
         }
         return null
@@ -90,7 +90,7 @@ export const findCustomerByPhone = async (client: DirectusContextClient, phone: 
             },
             fields: ['*', 'role.*']
         }));
-        if (userMapper.length > 0) {
+        if (users.length > 0) {
             return users[0] as CustomDirectusUser
         }
         return null
