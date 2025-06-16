@@ -125,8 +125,9 @@ const DeluxePayment: React.FC = () => {
                         <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
                     </Col>
                     <Col>
-                        {/*<SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>Next</SubmitButton>*/}
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
+                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>
+                            Next
+                        </SubmitButton>
                     </Col>
                 </Row>
             </Col>
