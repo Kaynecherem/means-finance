@@ -44,8 +44,17 @@ const DeluxePayment: React.FC = () => {
 
     useEffect(() => {
         const handleMessage = (e: MessageEvent) => {
-            if (e.data?.event === 'deluxe_success') {
-                sessionStorage.setItem('deluxeData', JSON.stringify(e.data.payload));
+            const data = e.data as any;
+            const isVaultMessage =
+                data && typeof data === 'object' && data.type === 'Vault';
+            const isSuccessEvent =
+                data && typeof data === 'object' && data.event === 'deluxe_success';
+
+            if (isSuccessEvent || isVaultMessage) {
+                const payload = isVaultMessage
+                    ? { customerId: data.data?.customerId, vaultId: data.data?.vaultId }
+                    : data.payload;
+                sessionStorage.setItem('deluxeData', JSON.stringify(payload));
                 alert('Payment method added successfully');
                 setIsPaymentAdded(true);
             }
