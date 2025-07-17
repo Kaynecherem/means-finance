@@ -99,7 +99,7 @@ const DeluxePayment: React.FC = () => {
     xtoken: "${deluxeToken}",
     xrtype: "Create Vault",
     xpm: "0",
-    xdisplayvafields: "true",
+    // xdisplayvafields: "true",
     xcssid: "mycustomcss"
   };
 
