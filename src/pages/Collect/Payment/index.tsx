@@ -10,7 +10,7 @@ import DueNow from "../../../components/DueNow";
 import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
-import { captureACHPayment, captureCardPayment, recordCashPayment } from "../../../utils/apis/directus";
+import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment } from "../../../utils/apis/directus";
 import { getCustomerPaymentSources } from '../../../utils/apis/directus/index';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
@@ -119,6 +119,12 @@ const Payment = () => {
                     cardId,
                     enableAutoPayment
                 })
+            await captureDeluxeCardPayment(
+                directusClient,
+                {
+                    paymentId: duePayment?.id as number
+                }
+            )
             navigate(successUrl, { replace: true })
         } catch (error) {
             message.error((error as InternalErrors).message)
@@ -150,6 +156,12 @@ const Payment = () => {
                         cvv: values.cvv,
                         enableAutoPayment
                     })
+                await captureDeluxeCardPayment(
+                    directusClient,
+                    {
+                        paymentId: payment.id
+                    }
+                )
                 navigate(successUrl, { replace: true })
             } catch (error) {
                 message.error((error as InternalErrors).message)
@@ -176,6 +188,12 @@ const Payment = () => {
                         accountNumber: values.account,
                         routingNumber: values.routing,
                         enableAutoPayment
+                    }
+                )
+                await captureDeluxeACHPayment(
+                    directusClient,
+                    {
+                        paymentId: payment.id
                     }
                 )
                 navigate(successUrl, { replace: true })
@@ -211,6 +229,12 @@ const Payment = () => {
                     accountId,
                     enableAutoPayment
                 })
+            await captureDeluxeACHPayment(
+                directusClient,
+                {
+                    paymentId: duePayment?.id as number
+                }
+            )
             navigate(successUrl, { replace: true })
         } catch (error) {
             message.error((error as InternalErrors).message)
