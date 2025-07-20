@@ -440,6 +440,25 @@ export const captureCardPayment = async (
     }
 
 }
+
+export const captureDeluxeCardPayment = async (
+    client: DirectusContextClient,
+    payload: {
+        paymentId: number
+    }) => {
+    try {
+        const res = await client.request(triggerFlow('POST', 'd8acd9a4-1917-4252-80d3-d11e602fd932', payload));
+
+        if (res.errors && res.errors.length > 0) {
+            throw res
+        } else if (!res.errors && res.status > 299) {
+            throw formatError(res)
+        }
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError)
+    }
+
+}
 export const updateBillStatus = async (
     client: DirectusContextClient,
     billId: number,
@@ -648,6 +667,25 @@ export const captureACHPayment = async (
         } else if (!res.errors && res.status > 299) {
             throw formatError(res)
 
+        }
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError)
+    }
+
+}
+
+export const captureDeluxeACHPayment = async (
+    client: DirectusContextClient,
+    payload: {
+        paymentId: number
+    }) => {
+    try {
+        const res = await client.request(triggerFlow('POST', '15c1fbc3-db05-4940-ac04-193964544ef8', payload));
+
+        if (res.errors && res.errors.length > 0) {
+            throw res
+        } else if (!res.errors && res.status > 299) {
+            throw formatError(res)
         }
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError)
