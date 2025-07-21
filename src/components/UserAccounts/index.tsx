@@ -7,7 +7,7 @@ import CustomButton1 from "../Form/CustomButton1";
 import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
 import { AddButton, CardChangeButtonWrapper, CardWrapper, StyledCarousel, UserCardHeading, UserCardWrapper } from '../UserCards/style';
-import AddAccountModal from "./AddAccountModal";
+import DeluxePaymentModal from "../DeluxePaymentModal";
 import NoAccounts from "./NoCard";
 import { AccountInfo } from "./style";
 
@@ -105,7 +105,7 @@ const UserAccounts: React.FC<{
                     </Row>
                 </>
             }
-            <AddAccountModal open={showAddAccount} onClose={() => setShowAddAccount(false)} agencyId={agencyId} onAccountAdd={handleOnAccountAdd} />
+            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} />
 
         </UserCardWrapper>
     </MiniCard>

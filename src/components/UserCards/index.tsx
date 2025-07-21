@@ -12,7 +12,7 @@ import CardIcon from "../Form/CardNumberInput/CardIcon";
 import CustomButton1 from "../Form/CustomButton1";
 import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
-import AddCardModal from "./AddCardModal";
+import DeluxePaymentModal from "../DeluxePaymentModal";
 import NoCard from "./NoCard";
 import { AddButton, CardChangeButtonWrapper, CardDetailsWrapper, CardIconWrapper, CardInfoWrapper, CardWrapper, DeleteButton, DropdownContent, StyledCarousel, UserCardHeading, UserCardWrapper } from './style';
 
@@ -158,7 +158,7 @@ const UserCards: React.FC<{
                     </Row>
                 </>
             }
-            <AddCardModal open={showAddCard} onClose={() => setShowAddCard(false)} agencyId={agencyId} onCardAdd={handleOnCardAdd} />
+            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} />
         </UserCardWrapper>
     </MiniCard>
 }

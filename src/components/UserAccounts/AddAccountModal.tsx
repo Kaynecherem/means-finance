@@ -39,7 +39,7 @@ const AddAccountModal: React.FC<{
         }
     }
     return (<CustomModal
-        title="Add Card"
+        title="Add Account"
         open={props.open}
         onClose={props.onClose}
         onCancel={props.onClose}
