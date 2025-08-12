@@ -65,7 +65,9 @@ const router = createBrowserRouter([
             },
             {
                 path: "flow-test",
-                element: <FlowTest />,
+                element: <AuthenticationWrapper>
+                    <FlowTest />
+                </AuthenticationWrapper>,
             },
             {
                 path: "my-bills",
