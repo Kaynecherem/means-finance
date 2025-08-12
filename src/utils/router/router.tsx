@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import AuthenticationWrapper from "../../components/AuhenticationWrapper";
 import BoxContainer from "../../components/BoxContainer";
 import LayoutProvider from "../../components/LayoutProvider";
+import RouteError from "../../components/RouteError";
 import { Roles } from "../enums/common";
 
 const Login = lazyWithRetry(() => import('../../pages/Login'))
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
     {
         path: "/",
         element: <LayoutProvider />,
+        errorElement: <RouteError />,
         children: [
             {
                 path: "/",
