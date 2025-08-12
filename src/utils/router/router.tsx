@@ -33,6 +33,7 @@ const CollectSuccess = lazyWithRetry(() => import('../../pages/Collect/Success')
 const CollectError = lazyWithRetry(() => import('../../pages/Collect/Error'))
 const Manage = lazyWithRetry(() => import('../../pages/Manage'))
 const FlowTest = lazyWithRetry(() => import('../../pages/FlowTest'))
+const NotFound = lazyWithRetry(() => import('../../pages/NotFound'))
 
 const router = createBrowserRouter([
     {
@@ -189,6 +190,14 @@ const router = createBrowserRouter([
                         element: <AuthenticationWrapper role={Roles.AGENCY}><Manage /></AuthenticationWrapper>,
                     }
                 ]
+            },
+            {
+                path: "404",
+                element: <NotFound />,
+            },
+            {
+                path: "*",
+                element: <Navigate to='/404' replace />,
             }
         ]
     },

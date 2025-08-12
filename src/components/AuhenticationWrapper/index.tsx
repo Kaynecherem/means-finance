@@ -14,7 +14,7 @@ const AuthenticationWrapper: React.FC<PropsWithChildren<{
         if (loggedInRole === role) {
             return <>{children}</>
         }
-        return <Navigate to="/404" replace />
+        return <Navigate replace to='/404' />
     }
     return <Navigate to="/login" replace />
 }
