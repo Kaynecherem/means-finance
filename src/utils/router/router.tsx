@@ -32,6 +32,7 @@ const ChangesDue = lazyWithRetry(() => import('../../pages/Collect/ChangesDue'))
 const CollectSuccess = lazyWithRetry(() => import('../../pages/Collect/Success'))
 const CollectError = lazyWithRetry(() => import('../../pages/Collect/Error'))
 const Manage = lazyWithRetry(() => import('../../pages/Manage'))
+const FlowTest = lazyWithRetry(() => import('../../pages/FlowTest'))
 
 const router = createBrowserRouter([
     {
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
             {
                 path: "reset-password/error",
                 element: <ResetPasswordError />,
+            },
+            {
+                path: "flow-test",
+                element: <FlowTest />,
             },
             {
                 path: "my-bills",
