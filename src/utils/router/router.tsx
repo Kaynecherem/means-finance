@@ -67,12 +67,6 @@ const router = createBrowserRouter([
                 element: <ResetPasswordError />,
             },
             {
-                path: "flow-test",
-                element: <AuthenticationWrapper>
-                    <FlowTest />
-                </AuthenticationWrapper>,
-            },
-            {
                 path: "my-bills",
                 element: <AuthenticationWrapper>
                     <MyBills />
@@ -117,6 +111,10 @@ const router = createBrowserRouter([
                     {
                         path: "profile",
                         element: <AuthenticationWrapper role={Roles.AGENCY}><AgencyProfile /></AuthenticationWrapper>,
+                    },
+                    {
+                        path: "flow-test",
+                        element: <AuthenticationWrapper role={Roles.AGENCY}><FlowTest /></AuthenticationWrapper>,
                     },
                     {
                         path: "quote",
