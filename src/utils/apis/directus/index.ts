@@ -848,3 +848,22 @@ export const fetchPaymentWithToken = async (
 
 }
 
+export const fetchCustomerAgencyFlow = async (
+    client: DirectusContextClient,
+    payload: {
+        customer_id: string,
+        agency: string
+    }) => {
+    try {
+        const res = await client.request(triggerFlow('GET', '00cdf064-e022-49c8-b91d-8568e6daca78', payload));
+        if (res.errors && res.errors.length > 0) {
+            throw res;
+        } else if (!res.errors && res.status > 299) {
+            throw formatError(res);
+        }
+        return res;
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError);
+    }
+}
+
