@@ -11,10 +11,11 @@ import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
 import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment } from "../../../utils/apis/directus";
-import { getCustomerPaymentSources } from '../../../utils/apis/directus/index';
+import { fetchCustomerAgencyFlowNew } from '../../../utils/apis/directus';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
 import { BankAccount, Card, PaymentRecordingWith } from '../../../utils/types/common';
+import { CARD_TYPE_BRAND_MAPPING } from '../../../utils/contants/common';
 import { InternalErrors } from "../../../utils/types/errors";
 import { DirectusPayment } from '../../../utils/types/schema';
 import { PageBackButton, PageSubHeader } from "../../style";
@@ -53,13 +54,35 @@ const Payment = () => {
     const backUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/customer-summary" : "my-bills", [userRole])
     const fetchCardInfo = useCallback(
         async () => {
-            if (duePayment?.agency) {
+            if (duePayment?.agency && duePayment.customer) {
                 try {
                     setIsPaymentSourceLoading(true)
-                    const agencyId = duePayment.agency as number
-                    const res = await getCustomerPaymentSources(directusClient, { agency: agencyId, customer_id: duePayment.customer as string })
-                    setCards(res.cards)
-                    setBankAccounts(res.bank_accounts)
+                    const res: any[] = await fetchCustomerAgencyFlowNew(directusClient, {
+                        agency: String(duePayment.agency),
+                        customer_id: duePayment.customer as string
+                    })
+                    const customerMethods = res.filter(pm => pm.owner === duePayment.customer)
+                    const fetchedCards: Card[] = customerMethods
+                        .filter(pm => pm.expiry)
+                        .map(pm => ({
+                            id: pm.payment_method_id,
+                            is_default: 0,
+                            first6digit: Number(pm.masked_pan?.slice(0, 6)),
+                            last4digit: pm.masked_pan?.slice(-4),
+                            exp_month: pm.expiry.split('/')[0],
+                            exp_year: pm.expiry.split('/')[1],
+                            brand: pm.card_type?.[0]?.toUpperCase() as keyof typeof CARD_TYPE_BRAND_MAPPING
+                        }))
+                    const fetchedAccounts: BankAccount[] = customerMethods
+                        .filter(pm => pm.routing_number)
+                        .map(pm => ({
+                            id: pm.payment_method_id,
+                            is_default: 0,
+                            routing_number: Number(pm.routing_number),
+                            account_number: pm.account_number
+                        }))
+                    setCards(fetchedCards)
+                    setBankAccounts(fetchedAccounts)
                 } catch (error) {
                     message.error((error as InternalErrors).message)
                 } finally {
