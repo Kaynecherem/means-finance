@@ -867,3 +867,21 @@ export const fetchCustomerAgencyFlow = async (
     }
 }
 
+export const fetchCustomerAgencyFlowNew = async (
+    client: DirectusContextClient,
+    payload: {
+        customer_id: string,
+        agency: string
+    }) => {
+    try {
+        const res = await client.request(triggerFlow('GET', 'b578265a-905b-41d4-a19c-fbc47a260600', payload));
+        if (res.errors && res.errors.length > 0) {
+            throw res;
+        } else if (!res.errors && res.status > 299) {
+            throw formatError(res);
+        }
+        return res;
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError);
+    }
+}
