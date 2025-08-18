@@ -449,6 +449,8 @@ export const deluxeCreateNewCard = async (
         expDate: string,
         maskedPan: string,
         cardType: string,
+        customer_id: string,
+        agency: string,
     }
 ) => {
     try {
@@ -473,6 +475,8 @@ export const deluxeCreateNewACH = async (
         expDate: string,
         maskedPan: string,
         cardType: string,
+        customer_id: string,
+        agency: string,
     }
 ) => {
     try {
