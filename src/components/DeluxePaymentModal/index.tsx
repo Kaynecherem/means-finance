@@ -10,8 +10,7 @@ const DeluxePaymentModal: React.FC<{
     open?: boolean;
     onClose?: () => void;
     onPaymentAdd?: () => void;
-    xpm?: number;
-}> = ({ open, onClose, onPaymentAdd, xpm = 0 }) => {
+}> = ({ open, onClose, onPaymentAdd }) => {
     const dispatch = useDispatch();
     const { directusClient } = useDirectUs();
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
@@ -100,7 +99,7 @@ const DeluxePaymentModal: React.FC<{
     containerId: "mycontainer",
     xtoken: "${deluxeToken}",
     xrtype: "Create Vault",
-    xpm: "${xpm}",
+    xpm: "0",
     xcssid: "mycustomcss"
   };
 
@@ -114,7 +113,7 @@ const DeluxePaymentModal: React.FC<{
 </script>
 </body>
 </html>`;
-    }, [deluxeToken, xpm]);
+    }, [deluxeToken]);
 
     return (
         <CustomModal
