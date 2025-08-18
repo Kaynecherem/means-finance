@@ -59,8 +59,14 @@ const Payment = () => {
             if (duePayment?.agency && duePayment.customer) {
                 try {
                     setIsPaymentSourceLoading(true)
+                    const agencyId = typeof duePayment.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment.agency
+                    // ensure directus stages latest payment methods before fetching them
+                    await stageCustomerPaymentMethod(directusClient, {
+                        customer_id: duePayment.customer as string,
+                        agency: String(agencyId)
+                    })
                     const res: any[] = await fetchCustomerAgencyFlowNew(directusClient, {
-                        agency: String(duePayment.agency),
+                        agency: String(agencyId),
                         customer_id: duePayment.customer as string
                     })
                     const customerMethods = res.filter(pm => pm.owner === duePayment.customer)
