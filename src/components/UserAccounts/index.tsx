@@ -105,7 +105,7 @@ const UserAccounts: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} />
+            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} xpm={2} />
 
         </UserCardWrapper>
     </MiniCard>
