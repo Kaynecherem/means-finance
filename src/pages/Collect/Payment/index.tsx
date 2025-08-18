@@ -10,7 +10,7 @@ import DueNow from "../../../components/DueNow";
 import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
-import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew } from '../../../utils/apis/directus';
+import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew, deluxeCreateNewACH, deluxeCreateNewCard } from '../../../utils/apis/directus';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
 import { BankAccount, Card, PaymentRecordingWith } from '../../../utils/types/common';
@@ -22,7 +22,7 @@ import CardPayment from "./CardPayment";
 import CashPayment from "./CashPayment";
 import DirectDebitPayment from "./DirectDebitPayment";
 import { PaymentWrapper } from "./style";
-import DeluxePaymentModal from '../../../components/DeluxePaymentModal';
+import DeluxePaymentModal, { DeluxeTokenData } from '../../../components/DeluxePaymentModal';
 type PaymentFormValues = {
     paymentType: PaymentType
     amount?: number
@@ -102,17 +102,24 @@ const Payment = () => {
         }
     }, [backUrl, duePayment, fetchCardInfo, navigate])
 
-    const handlePaymentMethodAdd = async () => {
+    const handlePaymentMethodAdd = async (tokenData?: DeluxeTokenData) => {
         if (duePayment?.agency && duePayment.customer) {
             try {
-                const agencyId = typeof duePayment.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment.agency
+                const agencyId = typeof duePayment.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment.agency;
+                if (tokenData) {
+                    if (deluxePaymentType === PaymentType.CARD) {
+                        await deluxeCreateNewCard(directusClient, tokenData);
+                    } else if (deluxePaymentType === PaymentType.DIRECT_DEBIT) {
+                        await deluxeCreateNewACH(directusClient, tokenData);
+                    }
+                }
                 await stageCustomerPaymentMethod(directusClient, {
                     customer_id: duePayment.customer as string,
                     agency: String(agencyId)
-                })
-                await fetchCardInfo()
+                });
+                await fetchCardInfo();
             } catch (error) {
-                message.error((error as InternalErrors).message)
+                message.error((error as InternalErrors).message);
             }
         }
     }

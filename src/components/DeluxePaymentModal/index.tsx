@@ -7,10 +7,18 @@ import { updateAgency } from '../../utils/redux/slices/authSlice';
 import { RootState } from '../../utils/redux/store';
 import { PaymentType } from '../../utils/enums/common';
 
+export interface DeluxeTokenData {
+    token: string;
+    nameOnCard: string;
+    expDate: string;
+    maskedPan: string;
+    cardType: string;
+}
+
 const DeluxePaymentModal: React.FC<{
     open?: boolean;
     onClose?: () => void;
-    onPaymentAdd?: () => void;
+    onPaymentAdd?: (data?: DeluxeTokenData) => void;
     paymentType?: PaymentType | null;
 }> = ({ open, onClose, onPaymentAdd, paymentType }) => {
     const dispatch = useDispatch();
@@ -39,6 +47,17 @@ const DeluxePaymentModal: React.FC<{
             const data = e.data as any;
             const isVaultMessage = data && typeof data === 'object' && data.type === 'Vault';
             const isSuccessEvent = data && typeof data === 'object' && data.event === 'deluxe_success';
+            const isTokenMessage = isSuccessEvent && data.payload?.type === 'Token';
+
+            if (isTokenMessage) {
+                if (onPaymentAdd) {
+                    onPaymentAdd(data.payload?.data);
+                }
+                if (onClose) {
+                    onClose();
+                }
+                return;
+            }
 
             if (isSuccessEvent || isVaultMessage) {
                 const payload = isVaultMessage
@@ -46,10 +65,12 @@ const DeluxePaymentModal: React.FC<{
                     : data.payload;
                 sessionStorage.setItem('deluxeData', JSON.stringify(payload));
                 try {
-                    await updateProfile(directusClient, {
-                        deluxe_customer_id: payload?.data?.customerId,
-                        deluxe_vault_id: payload?.data?.vaultId,
-                    });
+                    if (payload?.data?.customerId || payload?.data?.vaultId) {
+                        await updateProfile(directusClient, {
+                            deluxe_customer_id: payload?.data?.customerId,
+                            deluxe_vault_id: payload?.data?.vaultId,
+                        });
+                    }
                 } catch (err) {
                     console.error(err);
                 }
