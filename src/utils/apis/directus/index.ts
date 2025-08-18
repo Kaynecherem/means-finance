@@ -872,15 +872,15 @@ export const fetchCustomerAgencyFlowNew = async (
     payload: {
         customer_id: string,
         agency: string
-    }) => {
+    }): Promise<any[]> => {
     try {
-        const res = await client.request(triggerFlow('GET', 'b578265a-905b-41d4-a19c-fbc47a260600', payload));
+        const res: any = await client.request(triggerFlow('GET', 'b578265a-905b-41d4-a19c-fbc47a260600', payload));
         if (res.errors && res.errors.length > 0) {
             throw res;
         } else if (!res.errors && res.status > 299) {
             throw formatError(res);
         }
-        return res;
+        return res as any[];
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError);
     }
