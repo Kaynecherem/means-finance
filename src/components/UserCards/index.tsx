@@ -25,7 +25,8 @@ const UserCards: React.FC<{
     onSelect?: (cardId: string) => void
     changeLoading?: (state: boolean) => void
     paymentRecordingWith?: PaymentRecordingWith
-}> = ({ loading, cards, agencyId, refetch, selectMode, onSelect, changeLoading, paymentRecordingWith }) => {
+    selectedCardId?: string
+}> = ({ loading, cards, agencyId, refetch, selectMode, onSelect, changeLoading, paymentRecordingWith, selectedCardId }) => {
     const { directusClient } = useDirectUs()
     const [showAddCard, setShowAddCard] = useState(false)
 
@@ -101,7 +102,7 @@ const UserCards: React.FC<{
                         }
                     }}
                     loading={paymentRecordingWith?.type === PaymentType.CARD && paymentRecordingWith.id === props.card.id}
-                >Select</CustomButton1>
+                >{selectedCardId === props.card.id ? 'Selected' : 'Select'}</CustomButton1>
             }
         </CardChangeButtonWrapper>
     </CardWrapper>
