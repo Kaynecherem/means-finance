@@ -158,7 +158,7 @@ const UserCards: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} xpm={1} />
+            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} />
         </UserCardWrapper>
     </MiniCard>
 }
