@@ -20,8 +20,10 @@ const parseDirectUsErrors = (error: DirectusError) => {
             return new InvalidCredentialsError()
         case "BAD_REQUEST":
             return new BadRequestError(message)
-        case "FORBIDDEN":
+        case "UNAUTHENTICATED":
             performLogout()
+            return new ForbiddenError()
+        case "FORBIDDEN":
             return new ForbiddenError()
         default:
             return new SomethingWentWrongError(message)
