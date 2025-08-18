@@ -452,14 +452,14 @@ export const deluxeCreateNewCard = async (
     }
 ) => {
     try {
-        const res = await client.request(triggerFlow('POST', '70d7b733-2b37-4466-9b58-0f793544a955', payload));
+        const res = await client.request(triggerFlow('GET', '70d7b733-2b37-4466-9b58-0f793544a955', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res;
-        } else if (!res.errors && res.status > 299) {
+        } else if (!res.errors && (res as any).status > 299) {
             throw formatError(res);
         }
-        return res;
+        return (res as any)?.data ?? res;
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError);
     }
@@ -476,14 +476,14 @@ export const deluxeCreateNewACH = async (
     }
 ) => {
     try {
-        const res = await client.request(triggerFlow('POST', '0f1a4f6b-22b3-4e4c-a604-820317433dc2', payload));
+        const res = await client.request(triggerFlow('GET', '0f1a4f6b-22b3-4e4c-a604-820317433dc2', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res;
-        } else if (!res.errors && res.status > 299) {
+        } else if (!res.errors && (res as any).status > 299) {
             throw formatError(res);
         }
-        return res;
+        return (res as any)?.data ?? res;
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError);
     }
