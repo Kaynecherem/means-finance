@@ -496,7 +496,10 @@ export const deluxeCreateNewACH = async (
 export const captureDeluxeCardPayment = async (
     client: DirectusContextClient,
     payload: {
-        paymentId: number
+        customer_id: string,
+        agency: string,
+        bill_payment_id: number,
+        payment_method_id: string
     }) => {
     try {
         const res = await client.request(triggerFlow('POST', 'd8acd9a4-1917-4252-80d3-d11e602fd932', payload));
@@ -729,7 +732,10 @@ export const captureACHPayment = async (
 export const captureDeluxeACHPayment = async (
     client: DirectusContextClient,
     payload: {
-        paymentId: number
+        customer_id: string,
+        agency: string,
+        bill_payment_id: number,
+        payment_method_id: string
     }) => {
     try {
         const res = await client.request(triggerFlow('POST', '15c1fbc3-db05-4940-ac04-193964544ef8', payload));

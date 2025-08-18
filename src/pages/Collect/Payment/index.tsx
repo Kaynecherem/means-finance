@@ -51,6 +51,7 @@ const Payment = () => {
     const [bankAccounts, setBankAccounts] = useState<Array<BankAccount>>([])
     const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false)
     const [deluxePaymentType, setDeluxePaymentType] = useState<PaymentType | null>(null)
+    const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null)
     const successUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/success" : "/payment/success", [userRole])
     const errorUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/error" : "/payment/error", [userRole])
     const backUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/customer-summary" : "my-bills", [userRole])
@@ -177,10 +178,14 @@ const Payment = () => {
                     cardId,
                     enableAutoPayment
                 })
+            const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
             await captureDeluxeCardPayment(
                 directusClient,
                 {
-                    paymentId: duePayment?.id as number
+                    customer_id: duePayment?.customer as string,
+                    agency: String(agencyId),
+                    bill_payment_id: duePayment?.id as number,
+                    payment_method_id: cardId
                 }
             )
             navigate(successUrl, { replace: true })
@@ -200,79 +205,6 @@ const Payment = () => {
             setPaymentRecording(false)
         }
     }
-    const cardCollection = async (payment: DirectusPayment, values: PaymentFormValues) => {
-        if (values.cardNumber && values.cvv && values.expiry) {
-            try {
-                setPaymentRecording(true)
-                await captureCardPayment(
-                    directusClient,
-                    {
-                        paymentId: payment.id,
-                        cardNumber: values.cardNumber,
-                        expMonth: values.expiry.month,
-                        expYear: values.expiry.year,
-                        cvv: values.cvv,
-                        enableAutoPayment
-                    })
-                await captureDeluxeCardPayment(
-                    directusClient,
-                    {
-                        paymentId: payment.id
-                    }
-                )
-                navigate(successUrl, { replace: true })
-            } catch (error) {
-                message.error((error as InternalErrors).message)
-                navigate(errorUrl, {
-                    replace: true,
-                    state: {
-                        message: (error as InternalErrors).message
-                    }
-                })
-
-            } finally {
-                setPaymentRecording(false)
-            }
-        }
-    }
-    const directDebitCollection = async (payment: DirectusPayment, values: PaymentFormValues) => {
-        if (values.account && values.routing) {
-            try {
-                setPaymentRecording(true)
-                await captureACHPayment(
-                    directusClient,
-                    {
-                        paymentId: payment.id,
-                        accountNumber: values.account,
-                        routingNumber: values.routing,
-                        enableAutoPayment
-                    }
-                )
-                await captureDeluxeACHPayment(
-                    directusClient,
-                    {
-                        paymentId: payment.id
-                    }
-                )
-                navigate(successUrl, { replace: true })
-            } catch (error) {
-                message.error((error as InternalErrors).message)
-                navigate(
-                    errorUrl,
-                    {
-                        replace: true,
-                        state: {
-                            message: (error as InternalErrors).message
-                        }
-                    }
-                )
-
-            } finally {
-                setPaymentRecording(false)
-            }
-        }
-    }
-
     const directDebitCollectionById = async (accountId: string) => {
         try {
             setPaymentRecordingWith({
@@ -287,10 +219,14 @@ const Payment = () => {
                     accountId,
                     enableAutoPayment
                 })
+            const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
             await captureDeluxeACHPayment(
                 directusClient,
                 {
-                    paymentId: duePayment?.id as number
+                    customer_id: duePayment?.customer as string,
+                    agency: String(agencyId),
+                    bill_payment_id: duePayment?.id as number,
+                    payment_method_id: accountId
                 }
             )
             navigate(successUrl, { replace: true })
@@ -318,10 +254,18 @@ const Payment = () => {
                     await cashCollection(duePayment, values)
                     break;
                 case PaymentType.CARD:
-                    await cardCollection(duePayment, values)
+                    if (selectedPaymentMethodId) {
+                        await cardCollectionById(selectedPaymentMethodId)
+                    } else {
+                        message.error("Please select a card.")
+                    }
                     break;
                 case PaymentType.DIRECT_DEBIT:
-                    await directDebitCollection(duePayment, values)
+                    if (selectedPaymentMethodId) {
+                        await directDebitCollectionById(selectedPaymentMethodId)
+                    } else {
+                        message.error("Please select an account.")
+                    }
                     break;
                 default:
                     break;
@@ -382,6 +326,7 @@ const Payment = () => {
                                                             label: "Direct Debit"
                                                         }
                                                     ]}
+                                                    onChange={() => setSelectedPaymentMethodId(null)}
                                                 />
                                             </FormItem>
                                         </Col>
@@ -396,15 +341,35 @@ const Payment = () => {
                                                             case PaymentType.CASH:
                                                                 return <CashPayment duePayment={duePayment} />
                                                             case PaymentType.CARD:
-                                                                return <CardPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} cards={cards} onCardSelect={cardCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddCard={() => {
-                                                                    setDeluxePaymentType(PaymentType.CARD)
-                                                                    setShowAddPaymentMethod(true)
-                                                                }} />
+                                                                return <CardPayment
+                                                                    autoPayment={enableAutoPayment}
+                                                                    onAutoPaymentChange={setEnableAutoPayment}
+                                                                    loading={isPaymentSourceLoading}
+                                                                    cards={cards}
+                                                                    onCardSelect={setSelectedPaymentMethodId}
+                                                                    paymentRecordingWith={paymentRecordingWith}
+                                                                    selectedCardId={selectedPaymentMethodId ?? undefined}
+                                                                    amount={Number(duePayment?.value)}
+                                                                    onAddCard={() => {
+                                                                        setDeluxePaymentType(PaymentType.CARD)
+                                                                        setShowAddPaymentMethod(true)
+                                                                    }}
+                                                                />
                                                             case PaymentType.DIRECT_DEBIT:
-                                                                return <DirectDebitPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} bankAccounts={bankAccounts} onAccountSelect={directDebitCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddAccount={() => {
-                                                                    setDeluxePaymentType(PaymentType.DIRECT_DEBIT)
-                                                                    setShowAddPaymentMethod(true)
-                                                                }} />
+                                                                return <DirectDebitPayment
+                                                                    autoPayment={enableAutoPayment}
+                                                                    onAutoPaymentChange={setEnableAutoPayment}
+                                                                    loading={isPaymentSourceLoading}
+                                                                    bankAccounts={bankAccounts}
+                                                                    onAccountSelect={setSelectedPaymentMethodId}
+                                                                    paymentRecordingWith={paymentRecordingWith}
+                                                                    selectedAccountId={selectedPaymentMethodId ?? undefined}
+                                                                    amount={Number(duePayment?.value)}
+                                                                    onAddAccount={() => {
+                                                                        setDeluxePaymentType(PaymentType.DIRECT_DEBIT)
+                                                                        setShowAddPaymentMethod(true)
+                                                                    }}
+                                                                />
 
                                                             default:
                                                                 return null;

@@ -11,12 +11,21 @@ const DirectDebitPayment = (props: {
     bankAccounts?: BankAccount[],
     onAccountSelect?: (accountId: string) => void,
     paymentRecordingWith: PaymentRecordingWith
+    selectedAccountId?: string
     amount?: number,
     onAddAccount?: () => void
 }) => {
     return <Row justify={'center'} gutter={[0, 24]}>
         <Col span={24}>
-            <UserAccounts loading={props.loading} bankAccounts={props.bankAccounts} agencyId={null} selectMode onSelect={props.onAccountSelect} paymentRecordingWith={props.paymentRecordingWith} />
+            <UserAccounts
+                loading={props.loading}
+                bankAccounts={props.bankAccounts}
+                agencyId={null}
+                selectMode
+                onSelect={props.onAccountSelect}
+                paymentRecordingWith={props.paymentRecordingWith}
+                selectedAccountId={props.selectedAccountId}
+            />
         </Col>
         <Col span={24} style={{ textAlign: 'center' }}>
             <SubmitButton htmlType="button" onClick={props.onAddAccount}>Add New Account Information</SubmitButton>

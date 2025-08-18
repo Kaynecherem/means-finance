@@ -19,7 +19,8 @@ const UserAccounts: React.FC<{
     selectMode?: boolean,
     onSelect?: (cardId: string) => void
     paymentRecordingWith?: PaymentRecordingWith
-}> = ({ loading, bankAccounts, agencyId, refetch, selectMode, onSelect, paymentRecordingWith }) => {
+    selectedAccountId?: string
+}> = ({ loading, bankAccounts, agencyId, refetch, selectMode, onSelect, paymentRecordingWith, selectedAccountId }) => {
     const [showAddAccount, setShowAddAccount] = useState(false)
 
     const AccountComponent = (props: { account: BankAccount }) => <CardWrapper style={{ justifyContent: "space-evenly" }}>
@@ -47,7 +48,8 @@ const UserAccounts: React.FC<{
                             onSelect(props.account.id)
                         }
                     }}
-                    loading={paymentRecordingWith?.type === PaymentType.DIRECT_DEBIT && paymentRecordingWith.id === props.account.id}>Select</CustomButton1>
+                    loading={paymentRecordingWith?.type === PaymentType.DIRECT_DEBIT && paymentRecordingWith.id === props.account.id}
+                >{selectedAccountId === props.account.id ? 'Selected' : 'Select'}</CustomButton1>
             </CardChangeButtonWrapper>
         }
     </CardWrapper>

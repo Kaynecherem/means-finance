@@ -11,12 +11,21 @@ const CardPayment = (props: {
     cards?: Card[],
     onCardSelect?: (cardId: string) => void
     paymentRecordingWith: PaymentRecordingWith
+    selectedCardId?: string
     amount?: number,
     onAddCard?: () => void
 }) => {
     return <Row justify={'center'} gutter={[12, 24]}>
         <Col span={24}>
-            <UserCards loading={props.loading} cards={props.cards} agencyId={null} selectMode onSelect={props.onCardSelect} paymentRecordingWith={props.paymentRecordingWith} />
+            <UserCards
+                loading={props.loading}
+                cards={props.cards}
+                agencyId={null}
+                selectMode
+                onSelect={props.onCardSelect}
+                paymentRecordingWith={props.paymentRecordingWith}
+                selectedCardId={props.selectedCardId}
+            />
         </Col>
         <Col span={24} style={{ textAlign: 'center' }}>
             <SubmitButton htmlType="button" onClick={props.onAddCard}>Add New Card</SubmitButton>
