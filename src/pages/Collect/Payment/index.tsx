@@ -50,6 +50,7 @@ const Payment = () => {
     const [cards, setCards] = useState<Array<Card>>([])
     const [bankAccounts, setBankAccounts] = useState<Array<BankAccount>>([])
     const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false)
+    const [deluxePaymentType, setDeluxePaymentType] = useState<PaymentType | null>(null)
     const successUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/success" : "/payment/success", [userRole])
     const errorUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/error" : "/payment/error", [userRole])
     const backUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/customer-summary" : "my-bills", [userRole])
@@ -377,9 +378,15 @@ const Payment = () => {
                                                             case PaymentType.CASH:
                                                                 return <CashPayment duePayment={duePayment} />
                                                             case PaymentType.CARD:
-                                                                return <CardPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} cards={cards} onCardSelect={cardCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddCard={() => setShowAddPaymentMethod(true)} />
+                                                                return <CardPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} cards={cards} onCardSelect={cardCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddCard={() => {
+                                                                    setDeluxePaymentType(PaymentType.CARD)
+                                                                    setShowAddPaymentMethod(true)
+                                                                }} />
                                                             case PaymentType.DIRECT_DEBIT:
-                                                                return <DirectDebitPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} bankAccounts={bankAccounts} onAccountSelect={directDebitCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddAccount={() => setShowAddPaymentMethod(true)} />
+                                                                return <DirectDebitPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} bankAccounts={bankAccounts} onAccountSelect={directDebitCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddAccount={() => {
+                                                                    setDeluxePaymentType(PaymentType.DIRECT_DEBIT)
+                                                                    setShowAddPaymentMethod(true)
+                                                                }} />
 
                                                             default:
                                                                 return null;
@@ -401,7 +408,15 @@ const Payment = () => {
                 </Col>
             </Row>
         </BoxWrapper>
-        <DeluxePaymentModal open={showAddPaymentMethod} onClose={() => setShowAddPaymentMethod(false)} onPaymentAdd={handlePaymentMethodAdd} />
+        <DeluxePaymentModal
+            open={showAddPaymentMethod}
+            onClose={() => {
+                setShowAddPaymentMethod(false)
+                setDeluxePaymentType(null)
+            }}
+            onPaymentAdd={handlePaymentMethodAdd}
+            paymentType={deluxePaymentType}
+        />
         </>
 
     )

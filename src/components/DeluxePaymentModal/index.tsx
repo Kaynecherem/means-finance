@@ -5,12 +5,14 @@ import { useDirectUs } from '../DirectUs/DirectusContext';
 import { getAgencyDeluxePartnerToken, updateProfile } from '../../utils/apis/directus';
 import { updateAgency } from '../../utils/redux/slices/authSlice';
 import { RootState } from '../../utils/redux/store';
+import { PaymentType } from '../../utils/enums/common';
 
 const DeluxePaymentModal: React.FC<{
     open?: boolean;
     onClose?: () => void;
     onPaymentAdd?: () => void;
-}> = ({ open, onClose, onPaymentAdd }) => {
+    paymentType?: PaymentType | null;
+}> = ({ open, onClose, onPaymentAdd, paymentType }) => {
     const dispatch = useDispatch();
     const { directusClient } = useDirectUs();
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
@@ -66,6 +68,8 @@ const DeluxePaymentModal: React.FC<{
     }, [open, onClose, onPaymentAdd, directusClient]);
 
     const iframeDoc = useMemo(() => {
+        const xpm = paymentType === PaymentType.CARD ? '1' : paymentType === PaymentType.DIRECT_DEBIT ? '2' : '0';
+        const xrType = paymentType ? 'Generate Token' : 'Create Vault';
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,8 +102,8 @@ const DeluxePaymentModal: React.FC<{
   var options = {
     containerId: "mycontainer",
     xtoken: "${deluxeToken}",
-    xrtype: "Create Vault",
-    xpm: "0",
+    xrtype: "${xrType}",
+    xpm: "${xpm}",
     xcssid: "mycustomcss"
   };
 
@@ -113,7 +117,7 @@ const DeluxePaymentModal: React.FC<{
 </script>
 </body>
 </html>`;
-    }, [deluxeToken]);
+    }, [deluxeToken, paymentType]);
 
     return (
         <CustomModal
