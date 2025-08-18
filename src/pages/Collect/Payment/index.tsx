@@ -107,10 +107,15 @@ const Payment = () => {
             try {
                 const agencyId = typeof duePayment.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment.agency;
                 if (tokenData) {
+                    const payload = {
+                        ...tokenData,
+                        customer_id: duePayment.customer as string,
+                        agency: String(agencyId)
+                    };
                     if (deluxePaymentType === PaymentType.CARD) {
-                        await deluxeCreateNewCard(directusClient, tokenData);
+                        await deluxeCreateNewCard(directusClient, payload);
                     } else if (deluxePaymentType === PaymentType.DIRECT_DEBIT) {
-                        await deluxeCreateNewACH(directusClient, tokenData);
+                        await deluxeCreateNewACH(directusClient, payload);
                     }
                 }
                 await stageCustomerPaymentMethod(directusClient, {
