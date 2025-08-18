@@ -12,12 +12,12 @@ import BoxWrapper from "../../../components/BoxWrapper"
 import { useDirectUs } from '../../../components/DirectUs/DirectusContext'
 import DueNow from "../../../components/DueNow"
 import FormIcon from "../../../components/Form/FormIcon"
-import { getBillPayments, getBillVins } from "../../../utils/apis/directus"
+import { getBillPayments, getBillVins, stageCustomerPaymentMethod } from "../../../utils/apis/directus"
 import { BillTypeEnum } from "../../../utils/enums/common"
 import billTypeMapper from '../../../utils/helpers/billTypeMapper'
 import { RootState } from '../../../utils/redux/store'
 import { InternalErrors } from "../../../utils/types/errors"
-import { DirectusPayment, DirectusVin } from "../../../utils/types/schema"
+import { DirectusAgency, DirectusPayment, DirectusVin } from "../../../utils/types/schema"
 import { PageSubHeader, StatusWrapper } from "../../style"
 import { CustomerName } from "../style"
 import { BillDueWrapper, PayButton, PaymentHistoryTable, PolicyInfo, SummaryWrapper, TableHelperText } from "./style"
@@ -128,12 +128,23 @@ const CustomerSummary = () => {
         fetchPayments()
     }, [fetchPayments])
 
-    const handlePay = () => {
-        navigate('/agency/collect/payment', {
-            state: {
-                duePayment
+    const handlePay = async () => {
+        try {
+            if (customer?.id && bill?.agency) {
+                const agencyId = typeof bill.agency === 'object' ? (bill.agency as DirectusAgency).id : bill.agency
+                await stageCustomerPaymentMethod(directusClient, {
+                    customer_id: customer.id,
+                    agency: String(agencyId)
+                })
             }
-        })
+            navigate('/agency/collect/payment', {
+                state: {
+                    duePayment
+                }
+            })
+        } catch (error) {
+            message.error((error as InternalErrors).message)
+        }
     }
     const getDueDuration = (date: string) => {
         const dueDate = moment(date).endOf('day')
