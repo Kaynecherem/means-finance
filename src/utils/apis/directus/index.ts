@@ -848,7 +848,7 @@ export const fetchPaymentWithToken = async (
 
 }
 
-export const fetchCustomerAgencyFlow = async (
+export const stageCustomerPaymentMethod = async (
     client: DirectusContextClient,
     payload: {
         customer_id: string,

@@ -1,7 +1,7 @@
 import { Button } from 'antd';
 import React, { useState } from 'react';
 import { useDirectUs } from '../../components/DirectUs/DirectusContext';
-import { fetchCustomerAgencyFlow } from '../../utils/apis/directus';
+import { stageCustomerPaymentMethod } from '../../utils/apis/directus';
 
 const FlowTest: React.FC = () => {
     const { directusClient } = useDirectUs();
@@ -9,7 +9,7 @@ const FlowTest: React.FC = () => {
 
     const handleClick = async () => {
         try {
-            const res = await fetchCustomerAgencyFlow(directusClient, {
+            const res = await stageCustomerPaymentMethod(directusClient, {
                 agency: '38',
                 customer_id: 'c2588d23-b486-419c-bd8f-306d849a2e21',
             });
