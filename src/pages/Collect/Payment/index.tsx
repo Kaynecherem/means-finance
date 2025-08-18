@@ -10,7 +10,7 @@ import DueNow from "../../../components/DueNow";
 import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
-import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew, deluxeCreateNewACH, deluxeCreateNewCard } from '../../../utils/apis/directus';
+import { recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew, deluxeCreateNewACH, deluxeCreateNewCard } from '../../../utils/apis/directus';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
 import { BankAccount, Card, PaymentRecordingWith } from '../../../utils/types/common';
@@ -171,13 +171,6 @@ const Payment = () => {
                 id: cardId
             })
             setPaymentRecording(true)
-            await captureCardPayment(
-                directusClient,
-                {
-                    paymentId: duePayment?.id as number,
-                    cardId,
-                    enableAutoPayment
-                })
             const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
             await captureDeluxeCardPayment(
                 directusClient,
@@ -212,13 +205,6 @@ const Payment = () => {
                 id: accountId
             })
             setPaymentRecording(true)
-            await captureACHPayment(
-                directusClient,
-                {
-                    paymentId: duePayment?.id as number,
-                    accountId,
-                    enableAutoPayment
-                })
             const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
             await captureDeluxeACHPayment(
                 directusClient,
