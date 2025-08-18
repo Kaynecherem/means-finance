@@ -1,10 +1,8 @@
 import { Col, Row, Switch } from 'antd';
 import FeesInfoCard from '../../../components/FeesInfoCard';
-import FormItem from '../../../components/Form/FormItem';
-import TextField from '../../../components/Form/TextField';
+import SubmitButton from '../../../components/Form/SubmitButton';
 import UserAccounts from '../../../components/UserAccounts';
 import { BankAccount, PaymentRecordingWith } from '../../../utils/types/common';
-import { PageSubHeader } from '../../style';
 import { ChangeAccountInfoText } from './style';
 const DirectDebitPayment = (props: {
     autoPayment: boolean,
@@ -13,36 +11,15 @@ const DirectDebitPayment = (props: {
     bankAccounts?: BankAccount[],
     onAccountSelect?: (accountId: string) => void,
     paymentRecordingWith: PaymentRecordingWith
-    amount?: number
+    amount?: number,
+    onAddAccount?: () => void
 }) => {
     return <Row justify={'center'} gutter={[0, 24]}>
         <Col span={24}>
             <UserAccounts loading={props.loading} bankAccounts={props.bankAccounts} agencyId={null} selectMode onSelect={props.onAccountSelect} paymentRecordingWith={props.paymentRecordingWith} />
         </Col>
-        <Col>
-            <PageSubHeader>OR</PageSubHeader>
-        </Col>
-        <Col span={24}>
-            <FormItem
-                label="Routing #"
-                name="routing"
-                rules={[{
-                    required: true
-                }]}
-            >
-                <TextField />
-            </FormItem>
-        </Col>
-        <Col span={24}>
-            <FormItem
-                label="Account #"
-                name="account"
-                rules={[{
-                    required: true
-                }]}
-            >
-                <TextField />
-            </FormItem>
+        <Col span={24} style={{ textAlign: 'center' }}>
+            <SubmitButton htmlType="button" onClick={props.onAddAccount}>Add New Account Information</SubmitButton>
         </Col>
         <Col>
             <ChangeAccountInfoText>

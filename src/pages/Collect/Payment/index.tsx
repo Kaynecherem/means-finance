@@ -10,19 +10,19 @@ import DueNow from "../../../components/DueNow";
 import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
-import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment } from "../../../utils/apis/directus";
-import { fetchCustomerAgencyFlowNew } from '../../../utils/apis/directus';
+import { captureACHPayment, captureCardPayment, recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew } from '../../../utils/apis/directus';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
 import { BankAccount, Card, PaymentRecordingWith } from '../../../utils/types/common';
 import { CARD_TYPE_BRAND_MAPPING } from '../../../utils/contants/common';
 import { InternalErrors } from "../../../utils/types/errors";
-import { DirectusPayment } from '../../../utils/types/schema';
+import { DirectusPayment, DirectusAgency } from '../../../utils/types/schema';
 import { PageBackButton, PageSubHeader } from "../../style";
 import CardPayment from "./CardPayment";
 import CashPayment from "./CashPayment";
 import DirectDebitPayment from "./DirectDebitPayment";
 import { PaymentWrapper } from "./style";
+import DeluxePaymentModal from '../../../components/DeluxePaymentModal';
 type PaymentFormValues = {
     paymentType: PaymentType
     amount?: number
@@ -49,6 +49,7 @@ const Payment = () => {
     const [isPaymentSourceLoading, setIsPaymentSourceLoading] = useState(true)
     const [cards, setCards] = useState<Array<Card>>([])
     const [bankAccounts, setBankAccounts] = useState<Array<BankAccount>>([])
+    const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false)
     const successUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/success" : "/payment/success", [userRole])
     const errorUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/error" : "/payment/error", [userRole])
     const backUrl = useMemo(() => userRole === Roles.AGENCY ? "/agency/collect/customer-summary" : "my-bills", [userRole])
@@ -99,6 +100,21 @@ const Payment = () => {
             fetchCardInfo()
         }
     }, [backUrl, duePayment, fetchCardInfo, navigate])
+
+    const handlePaymentMethodAdd = async () => {
+        if (duePayment?.agency && duePayment.customer) {
+            try {
+                const agencyId = typeof duePayment.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment.agency
+                await stageCustomerPaymentMethod(directusClient, {
+                    customer_id: duePayment.customer as string,
+                    agency: String(agencyId)
+                })
+                await fetchCardInfo()
+            } catch (error) {
+                message.error((error as InternalErrors).message)
+            }
+        }
+    }
 
     const cashCollection = async (payment: DirectusPayment, values: PaymentFormValues) => {
 
@@ -298,6 +314,7 @@ const Payment = () => {
 
     }
     return (
+        <>
         <BoxWrapper type='large'>
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={24}>
@@ -360,9 +377,9 @@ const Payment = () => {
                                                             case PaymentType.CASH:
                                                                 return <CashPayment duePayment={duePayment} />
                                                             case PaymentType.CARD:
-                                                                return <CardPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} cards={cards} onCardSelect={cardCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} />
+                                                                return <CardPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} cards={cards} onCardSelect={cardCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddCard={() => setShowAddPaymentMethod(true)} />
                                                             case PaymentType.DIRECT_DEBIT:
-                                                                return <DirectDebitPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} bankAccounts={bankAccounts} onAccountSelect={directDebitCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} />
+                                                                return <DirectDebitPayment autoPayment={enableAutoPayment} onAutoPaymentChange={setEnableAutoPayment} loading={isPaymentSourceLoading} bankAccounts={bankAccounts} onAccountSelect={directDebitCollectionById} paymentRecordingWith={paymentRecordingWith} amount={Number(duePayment?.value)} onAddAccount={() => setShowAddPaymentMethod(true)} />
 
                                                             default:
                                                                 return null;
@@ -384,6 +401,8 @@ const Payment = () => {
                 </Col>
             </Row>
         </BoxWrapper>
+        <DeluxePaymentModal open={showAddPaymentMethod} onClose={() => setShowAddPaymentMethod(false)} onPaymentAdd={handlePaymentMethodAdd} />
+        </>
 
     )
 }
