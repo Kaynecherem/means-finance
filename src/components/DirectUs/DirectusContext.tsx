@@ -23,43 +23,10 @@ export const useDirectUs = () => {
 };
 
 export const DirectusProvider: React.FC<DirectusProviderProps> = ({ children }) => {
-    const providerValue = useMemo(() => {
-        const directusUrl = process.env.REACT_APP_DIRECTUS_URL;
-        const staticTokenValue = process.env.REACT_APP_DIRECTUS_STATIC_TOKEN;
 
-        if (!directusUrl) {
-            throw new Error('REACT_APP_DIRECTUS_URL is not defined');
-        }
-
-        if (!staticTokenValue) {
-            throw new Error('REACT_APP_DIRECTUS_STATIC_TOKEN is not defined');
-        }
-
-        return {
-            directusClient: createDirectus<Schema>(directusUrl)
-                .with(staticToken(staticTokenValue))
-                .with(
-                    authentication(
-                        'json',
-                        {
-                            autoRefresh: true,
-                            storage: {
-                                get: () => {
-                                    const data = localStorage.getItem('authenticationData');
-                                    if (data) {
-                                        return JSON.parse(data);
-                                    }
-                                    return null;
-                                },
-                                set: (value: AuthenticationData | null) =>
-                                    localStorage.setItem('authenticationData', JSON.stringify(value))
-                            }
                         }
                     )
                 )
-                .with(rest())
-        };
-    }, []);
 
     return (
         <DirectusContext.Provider value={providerValue}>
