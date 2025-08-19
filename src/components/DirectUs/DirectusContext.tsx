@@ -1,4 +1,4 @@
-import { authentication, AuthenticationData, createDirectus, rest, staticToken } from '@directus/sdk';
+import { authentication, AuthenticationData, createDirectus, rest } from '@directus/sdk';
 import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { DirectusContextClient } from '../../utils/types/directus';
 import { Schema } from '../../utils/types/schema';
@@ -24,8 +24,7 @@ export const useDirectUs = () => {
 
 export const DirectusProvider: React.FC<DirectusProviderProps> = ({ children }) => {
     const providerValue = useMemo(() => ({
-        directusClient: createDirectus<Schema>(process.env.REACT_APP_DIRECTUS_URL!)
-            .with(staticToken(process.env.REACT_APP_DIRECTUS_STATIC_TOKEN!))
+        directusClient: createDirectus<Schema>('https://meansfinance.directus.app/')
             .with(
                 authentication(
                     'json',
@@ -33,20 +32,20 @@ export const DirectusProvider: React.FC<DirectusProviderProps> = ({ children }) 
                         autoRefresh: true,
                         storage: {
                             get: () => {
-                                const data = localStorage.getItem('authenticationData');
+                                const data = localStorage.getItem('authenticationData')
                                 if (data) {
-                                    return JSON.parse(data);
+                                    return JSON.parse(data)
                                 }
-                                return null;
+                                return null
                             },
-                            set: (value: AuthenticationData | null) =>
-                                localStorage.setItem('authenticationData', JSON.stringify(value))
+                            set: (value: AuthenticationData | null) => localStorage.setItem('authenticationData', JSON.stringify(value))
                         }
                     }
                 )
+            ).with(
+                rest()
             )
-            .with(rest())
-    }), []);
+    }), [])
     return (
         <DirectusContext.Provider value={providerValue}>
             {children}
