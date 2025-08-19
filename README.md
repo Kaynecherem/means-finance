@@ -4,10 +4,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Environment Variables
 
-The application expects the following Directus configuration variables to be defined:
 
-- `REACT_APP_DIRECTUS_URL` – Base URL of the Directus instance.
-- `REACT_APP_DIRECTUS_STATIC_TOKEN` – Public API token used to access Directus for unauthenticated users.
 
 ## Available Scripts
 
