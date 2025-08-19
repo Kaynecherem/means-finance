@@ -2,6 +2,23 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment Variables
+
+Configure the Directus endpoint by setting `REACT_APP_DIRECTUS_URL` in the environment-specific files:
+
+```
+# .env.development
+REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+
+# .env.production
+REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+
+# .env.test
+REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+```
+
+Ensure the variable is set appropriately in your deployment environment.
+
 ## Available Scripts
 
 In the project directory, you can run:

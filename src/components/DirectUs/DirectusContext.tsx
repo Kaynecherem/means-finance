@@ -23,29 +23,35 @@ export const useDirectUs = () => {
 };
 
 export const DirectusProvider: React.FC<DirectusProviderProps> = ({ children }) => {
-    const providerValue = useMemo(() => ({
-        directusClient: createDirectus<Schema>('https://meansfinance.directus.app/')
-            .with(
-                authentication(
-                    'json',
-                    {
-                        autoRefresh: true,
-                        storage: {
-                            get: () => {
-                                const data = localStorage.getItem('authenticationData')
-                                if (data) {
-                                    return JSON.parse(data)
-                                }
-                                return null
-                            },
-                            set: (value: AuthenticationData | null) => localStorage.setItem('authenticationData', JSON.stringify(value))
+    const providerValue = useMemo(() => {
+        const directusUrl = process.env.REACT_APP_DIRECTUS_URL;
+        if (!directusUrl) {
+            throw new Error('REACT_APP_DIRECTUS_URL is not defined');
+        }
+        return {
+            directusClient: createDirectus<Schema>(directusUrl)
+                .with(
+                    authentication(
+                        'json',
+                        {
+                            autoRefresh: true,
+                            storage: {
+                                get: () => {
+                                    const data = localStorage.getItem('authenticationData')
+                                    if (data) {
+                                        return JSON.parse(data)
+                                    }
+                                    return null
+                                },
+                                set: (value: AuthenticationData | null) => localStorage.setItem('authenticationData', JSON.stringify(value))
+                            }
                         }
-                    }
+                    )
+                ).with(
+                    rest()
                 )
-            ).with(
-                rest()
-            )
-    }), [])
+        };
+    }, [])
     return (
         <DirectusContext.Provider value={providerValue}>
             {children}
