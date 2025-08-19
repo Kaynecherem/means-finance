@@ -4,17 +4,20 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Environment Variables
 
-Configure the Directus endpoint by setting `REACT_APP_DIRECTUS_URL` in the environment-specific files:
+Configure the Directus endpoint and static authentication token by setting `REACT_APP_DIRECTUS_URL` and `REACT_APP_DIRECTUS_STATIC_TOKEN` in the environment-specific files:
 
 ```
 # .env.development
 REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+REACT_APP_DIRECTUS_STATIC_TOKEN=STATIC_TOKEN
 
 # .env.production
 REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+REACT_APP_DIRECTUS_STATIC_TOKEN=STATIC_TOKEN
 
 # .env.test
 REACT_APP_DIRECTUS_URL=https://meansfinance.directus.app/
+REACT_APP_DIRECTUS_STATIC_TOKEN=STATIC_TOKEN
 ```
 
 Ensure the variable is set appropriately in your deployment environment.
