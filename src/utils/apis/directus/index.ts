@@ -50,6 +50,39 @@ export const userLogin = async (client: DirectusContextClient, data: { email: st
     }
 }
 
+export const getLoggedInUser = async (client: DirectusContextClient) => {
+    try {
+        const directusUser = await client.request(readMe({ fields: ['*', 'role.*'] })) as CustomDirectusUser
+
+        const role = directusUser.role as DirectusRole
+        if (role.name !== Roles.AGENCY && role.name !== Roles.CLIENT) {
+            throw new InvalidCredentialsError()
+        }
+
+        let directusAgency: DirectusAgency
+
+        if (role.name === Roles.AGENCY) {
+            const agencies = await client.request(readItems('agency', {
+                filter: {
+                    agency_manager: directusUser.id,
+                }
+            }))
+            if (agencies.length === 0) {
+                throw new SomethingWentWrongError()
+            }
+            directusAgency = agencies[0] as DirectusAgency
+        }
+
+        return {
+            agency: directusAgency ? agencyMapper(directusAgency) : null,
+            user: userMapper(directusUser),
+            role
+        }
+    } catch (error) {
+        throw parseDirectUsErrors(error as DirectusError)
+    }
+}
+
 export const logout = async (client: DirectusContextClient) => {
     try {
         await client.logout();
