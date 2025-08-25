@@ -1,18 +1,20 @@
 import { Col, Dropdown, Row, message } from 'antd';
 import { useState } from "react";
+import { useSelector } from 'react-redux';
 import { LuPlus } from "react-icons/lu";
-import { deleteUserCard } from "../../utils/apis/directus";
+import { deleteUserCard, deluxeCreateNewCard } from "../../utils/apis/directus";
 import { CARD_TYPE_BRAND_MAPPING } from '../../utils/contants/common';
 import { PaymentType } from '../../utils/enums/common';
 import { Card, PaymentRecordingWith } from "../../utils/types/common";
 import { InternalErrors } from '../../utils/types/errors';
+import { RootState } from '../../utils/redux/store';
 import Box from "../Box";
 import { useDirectUs } from "../DirectUs/DirectusContext";
 import CardIcon from "../Form/CardNumberInput/CardIcon";
 import CustomButton1 from "../Form/CustomButton1";
 import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
-import DeluxePaymentModal from "../DeluxePaymentModal";
+import DeluxePaymentModal, { DeluxeTokenData } from "../DeluxePaymentModal";
 import NoCard from "./NoCard";
 import { AddButton, CardChangeButtonWrapper, CardDetailsWrapper, CardIconWrapper, CardInfoWrapper, CardWrapper, DeleteButton, DropdownContent, StyledCarousel, UserCardHeading, UserCardWrapper } from './style';
 
@@ -28,6 +30,7 @@ const UserCards: React.FC<{
     selectedCardId?: string
 }> = ({ loading, cards, agencyId, refetch, selectMode, onSelect, changeLoading, paymentRecordingWith, selectedCardId }) => {
     const { directusClient } = useDirectUs()
+    const userId = useSelector((state: RootState) => state.auth.user?.id)
     const [showAddCard, setShowAddCard] = useState(false)
 
     const deleteCard = async (card: Card) => {
@@ -106,9 +109,21 @@ const UserCards: React.FC<{
             }
         </CardChangeButtonWrapper>
     </CardWrapper>
-    const handleOnCardAdd = async () => {
-        if (refetch) {
-            refetch()
+    const handleOnCardAdd = async (tokenData?: DeluxeTokenData) => {
+        if (refetch && tokenData && agencyId && userId) {
+            try {
+                await deluxeCreateNewCard(directusClient, {
+                    ...tokenData,
+                    customer_id: userId,
+                    agency: String(agencyId)
+                })
+                await refetch()
+            } catch (error) {
+                message.error((error as InternalErrors).message)
+            } finally {
+                setShowAddCard(false)
+            }
+        } else {
             setShowAddCard(false)
         }
     }
@@ -159,7 +174,7 @@ const UserCards: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} />
+            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} paymentType={PaymentType.CARD} />
         </UserCardWrapper>
     </MiniCard>
 }

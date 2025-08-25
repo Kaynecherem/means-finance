@@ -5,8 +5,9 @@ import BoxWrapper from '../../components/BoxWrapper';
 import { useDirectUs } from '../../components/DirectUs/DirectusContext';
 import UserAccounts from '../../components/UserAccounts';
 import UserCards from '../../components/UserCards';
-import { getCustomerDueBills, getCustomerPaymentSources } from '../../utils/apis/directus/index';
+import { getCustomerDueBills, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew } from '../../utils/apis/directus';
 import { BankAccount, Card } from '../../utils/types/common';
+import { CARD_TYPE_BRAND_MAPPING } from '../../utils/contants/common';
 import { InternalErrors } from '../../utils/types/errors';
 import { DirectusAgency, DirectusBill } from '../../utils/types/schema';
 import Bills from './Bills';
@@ -22,13 +23,40 @@ const MyBills: React.FC = () => {
     const { directusClient } = useDirectUs();
     const fetchCardInfo = useCallback(
         async () => {
-            if (bill?.agency) {
+            if (bill?.agency && bill?.customer) {
                 try {
                     setIsPaymentSourceLoading(true)
                     const agencyId = (bill.agency as DirectusAgency).id
-                    const res = await getCustomerPaymentSources(directusClient, { agency: agencyId })
-                    setCards(res.cards)
-                    setBankAccounts(res.bank_accounts)
+                    await stageCustomerPaymentMethod(directusClient, {
+                        customer_id: bill.customer as string,
+                        agency: String(agencyId)
+                    })
+                    const res: any[] = await fetchCustomerAgencyFlowNew(directusClient, {
+                        agency: String(agencyId),
+                        customer_id: bill.customer as string
+                    })
+                    const customerMethods = res.filter(pm => pm.owner === bill.customer)
+                    const fetchedCards: Card[] = customerMethods
+                        .filter(pm => pm.expiry)
+                        .map(pm => ({
+                            id: pm.payment_method_id,
+                            is_default: 0,
+                            first6digit: Number(pm.masked_pan?.slice(0, 6)),
+                            last4digit: pm.masked_pan?.slice(-4),
+                            exp_month: pm.expiry.split('/')[0],
+                            exp_year: pm.expiry.split('/')[1],
+                            brand: pm.card_type?.[0]?.toUpperCase() as keyof typeof CARD_TYPE_BRAND_MAPPING
+                        }))
+                    const fetchedAccounts: BankAccount[] = customerMethods
+                        .filter(pm => pm.routing_number)
+                        .map(pm => ({
+                            id: pm.payment_method_id,
+                            is_default: 0,
+                            routing_number: Number(pm.routing_number),
+                            account_number: pm.account_number
+                        }))
+                    setCards(fetchedCards)
+                    setBankAccounts(fetchedAccounts)
                 } catch (error) {
                     message.error((error as InternalErrors).message)
                 } finally {
@@ -36,7 +64,7 @@ const MyBills: React.FC = () => {
                 }
             }
         },
-        [bill?.agency, directusClient],
+        [bill?.agency, bill?.customer, directusClient],
     )
     useEffect(() => {
         fetchCardInfo()
