@@ -1,15 +1,20 @@
-import { Col, Row } from "antd";
+import { Col, Row, message } from "antd";
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { LuPlus } from "react-icons/lu";
 import { PaymentType } from '../../utils/enums/common';
 import { BankAccount, PaymentRecordingWith } from "../../utils/types/common";
+import { RootState } from '../../utils/redux/store';
+import { useDirectUs } from "../DirectUs/DirectusContext";
 import CustomButton1 from "../Form/CustomButton1";
 import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
 import { AddButton, CardChangeButtonWrapper, CardWrapper, StyledCarousel, UserCardHeading, UserCardWrapper } from '../UserCards/style';
-import DeluxePaymentModal from "../DeluxePaymentModal";
+import DeluxePaymentModal, { DeluxeTokenData } from "../DeluxePaymentModal";
 import NoAccounts from "./NoCard";
 import { AccountInfo } from "./style";
+import { deluxeCreateNewACH } from "../../utils/apis/directus";
+import { InternalErrors } from '../../utils/types/errors';
 
 const UserAccounts: React.FC<{
     loading?: boolean
@@ -21,6 +26,8 @@ const UserAccounts: React.FC<{
     paymentRecordingWith?: PaymentRecordingWith
     selectedAccountId?: string
 }> = ({ loading, bankAccounts, agencyId, refetch, selectMode, onSelect, paymentRecordingWith, selectedAccountId }) => {
+    const { directusClient } = useDirectUs()
+    const userId = useSelector((state: RootState) => state.auth.user?.id)
     const [showAddAccount, setShowAddAccount] = useState(false)
 
     const AccountComponent = (props: { account: BankAccount }) => <CardWrapper style={{ justifyContent: "space-evenly" }}>
@@ -54,9 +61,21 @@ const UserAccounts: React.FC<{
         }
     </CardWrapper>
 
-    const handleOnAccountAdd = async () => {
-        if (refetch) {
-            refetch()
+    const handleOnAccountAdd = async (tokenData?: DeluxeTokenData) => {
+        if (refetch && tokenData && agencyId && userId) {
+            try {
+                await deluxeCreateNewACH(directusClient, {
+                    ...tokenData,
+                    customer_id: userId,
+                    agency: String(agencyId)
+                })
+                await refetch()
+            } catch (error) {
+                message.error((error as InternalErrors).message)
+            } finally {
+                setShowAddAccount(false)
+            }
+        } else {
             setShowAddAccount(false)
         }
     }
@@ -107,7 +126,7 @@ const UserAccounts: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} />
+            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} paymentType={PaymentType.DIRECT_DEBIT} />
 
         </UserCardWrapper>
     </MiniCard>
