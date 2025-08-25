@@ -88,6 +88,6 @@ export type BankAccount = {
     id: string;
     is_default: 1 | 0;
     routing_number: number;
-    account_number: string;
+    account_type: string;
 }
 export type PaymentRecordingWith = { type: PaymentType | null, id: string | null }

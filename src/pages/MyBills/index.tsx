@@ -53,7 +53,7 @@ const MyBills: React.FC = () => {
                             id: pm.payment_method_id,
                             is_default: 0,
                             routing_number: Number(pm.routing_number),
-                            account_number: pm.account_number
+                            account_type: pm.account_type
                         }))
                     setCards(fetchedCards)
                     setBankAccounts(fetchedAccounts)
