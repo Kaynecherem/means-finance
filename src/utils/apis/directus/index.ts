@@ -357,7 +357,8 @@ export const searchCustomerByName = async (client: DirectusContextClient, query:
             }
         }
         const res = await authRequest(client, readUsers({
-            filter
+            filter,
+            fields: ['id', 'first_name', 'last_name', 'phone', 'email']
         }))
         return res as CustomDirectusUser[]
     } catch (error) {
