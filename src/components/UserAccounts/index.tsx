@@ -11,6 +11,7 @@ import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
 import { AddButton, CardChangeButtonWrapper, CardWrapper, StyledCarousel, UserCardHeading, UserCardWrapper } from '../UserCards/style';
 import DeluxePaymentModal, { DeluxeTokenData } from "../DeluxePaymentModal";
+import CustomerDeluxePaymentModal from "../CustomerDeluxePaymentModal";
 import NoAccounts from "./NoCard";
 import { AccountInfo } from "./style";
 import { deluxeCreateNewACH } from "../../utils/apis/directus";
@@ -25,7 +26,8 @@ const UserAccounts: React.FC<{
     onSelect?: (cardId: string) => void
     paymentRecordingWith?: PaymentRecordingWith
     selectedAccountId?: string
-}> = ({ loading, bankAccounts, agencyId, refetch, selectMode, onSelect, paymentRecordingWith, selectedAccountId }) => {
+    useCustomerModal?: boolean
+}> = ({ loading, bankAccounts, agencyId, refetch, selectMode, onSelect, paymentRecordingWith, selectedAccountId, useCustomerModal }) => {
     const { directusClient } = useDirectUs()
     const userId = useSelector((state: RootState) => state.auth.user?.id)
     const [showAddAccount, setShowAddAccount] = useState(false)
@@ -126,7 +128,22 @@ const UserAccounts: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddAccount} onClose={() => setShowAddAccount(false)} onPaymentAdd={handleOnAccountAdd} paymentType={PaymentType.DIRECT_DEBIT} />
+            {useCustomerModal ? (
+                <CustomerDeluxePaymentModal
+                    open={showAddAccount}
+                    onClose={() => setShowAddAccount(false)}
+                    onPaymentAdd={handleOnAccountAdd}
+                    paymentType={PaymentType.DIRECT_DEBIT}
+                    agencyId={agencyId}
+                />
+            ) : (
+                <DeluxePaymentModal
+                    open={showAddAccount}
+                    onClose={() => setShowAddAccount(false)}
+                    onPaymentAdd={handleOnAccountAdd}
+                    paymentType={PaymentType.DIRECT_DEBIT}
+                />
+            )}
 
         </UserCardWrapper>
     </MiniCard>
