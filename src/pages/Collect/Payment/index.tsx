@@ -234,16 +234,24 @@ const Payment = () => {
             setPaymentRecording(false)
         }
     }
+    const handleCashSubmit = async (values: PaymentFormValues) => {
+        if (duePayment) {
+            await cashCollection(duePayment, values)
+        } else {
+            message.error("Something went wrong.")
+            navigate(backUrl, { replace: true })
+        }
+    }
     const handlePayment = async () => {
         if (!duePayment) {
             message.error("Something went wrong.")
             navigate(backUrl, { replace: true })
             return
         }
-        const values = form.getFieldsValue()
-        switch (values.paymentType) {
+        const paymentType = form.getFieldValue('paymentType')
+        switch (paymentType) {
             case PaymentType.CASH:
-                await cashCollection(duePayment, values)
+                form.submit()
                 break
             case PaymentType.CARD:
                 if (selectedPaymentMethodId) {
@@ -269,7 +277,7 @@ const Payment = () => {
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={24}>
                     <Box>
-                        <Form form={form} requiredMark={false} layout="vertical">
+                        <Form form={form} requiredMark={false} layout="vertical" onFinish={handleCashSubmit}>
                             <PaymentWrapper>
                                 <PageBackButton
                                     onClick={() => navigate(backUrl)}
