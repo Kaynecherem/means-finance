@@ -41,10 +41,10 @@ const UserAccounts: React.FC<{
         </AccountInfo>
         <AccountInfo>
             <div className="label">
-                Account #
+                Account Type
             </div>
             <div className="value">
-                {props.account.account_number.replaceAll("*", ".")}
+                {props.account.account_type}
             </div>
         </AccountInfo>
         {selectMode &&
