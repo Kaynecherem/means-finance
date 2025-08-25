@@ -40,6 +40,7 @@ const Payment = () => {
     const { directusClient } = useDirectUs()
     const userRole = useSelector((state: RootState) => state.auth.role)
     const { state: { duePayment } }: { state: { duePayment: DirectusPayment | null } } = useLocation()
+    const [form] = Form.useForm<PaymentFormValues>()
     const [paymentRecording, setPaymentRecording] = useState(false)
     const [enableAutoPayment, setEnableAutoPayment] = useState(true)
     const [paymentRecordingWith, setPaymentRecordingWith] = useState<PaymentRecordingWith>({
@@ -233,34 +234,34 @@ const Payment = () => {
             setPaymentRecording(false)
         }
     }
-    const handleSubmit = async (values: PaymentFormValues) => {
-        if (duePayment) {
-            switch (values.paymentType) {
-                case PaymentType.CASH:
-                    await cashCollection(duePayment, values)
-                    break;
-                case PaymentType.CARD:
-                    if (selectedPaymentMethodId) {
-                        await cardCollectionById(selectedPaymentMethodId)
-                    } else {
-                        message.error("Please select a card.")
-                    }
-                    break;
-                case PaymentType.DIRECT_DEBIT:
-                    if (selectedPaymentMethodId) {
-                        await directDebitCollectionById(selectedPaymentMethodId)
-                    } else {
-                        message.error("Please select an account.")
-                    }
-                    break;
-                default:
-                    break;
-            }
-        } else {
+    const handlePayment = async () => {
+        if (!duePayment) {
             message.error("Something went wrong.")
             navigate(backUrl, { replace: true })
+            return
         }
-
+        const values = form.getFieldsValue()
+        switch (values.paymentType) {
+            case PaymentType.CASH:
+                await cashCollection(duePayment, values)
+                break
+            case PaymentType.CARD:
+                if (selectedPaymentMethodId) {
+                    await cardCollectionById(selectedPaymentMethodId)
+                } else {
+                    message.error("Please select a card.")
+                }
+                break
+            case PaymentType.DIRECT_DEBIT:
+                if (selectedPaymentMethodId) {
+                    await directDebitCollectionById(selectedPaymentMethodId)
+                } else {
+                    message.error("Please select an account.")
+                }
+                break
+            default:
+                break
+        }
     }
     return (
         <>
@@ -268,7 +269,7 @@ const Payment = () => {
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={24}>
                     <Box>
-                        <Form requiredMark={false} layout="vertical" onFinish={handleSubmit}>
+                        <Form form={form} requiredMark={false} layout="vertical">
                             <PaymentWrapper>
                                 <PageBackButton
                                     onClick={() => navigate(backUrl)}
@@ -365,7 +366,13 @@ const Payment = () => {
                                             </Form.Item>
                                         </Col>
                                         <Col span={24} style={{ textAlign: 'center' }}>
-                                            <SubmitButton htmlType="submit" icon={<LuArrowRight />} style={{ marginTop: "16px" }} loading={paymentRecording}>
+                                            <SubmitButton
+                                                htmlType="button"
+                                                icon={<LuArrowRight />}
+                                                style={{ marginTop: "16px" }}
+                                                loading={paymentRecording}
+                                                onClick={handlePayment}
+                                            >
                                                 {userRole === Roles.AGENCY ? "Collect Payment" : "Pay"}
                                             </SubmitButton>
                                         </Col>
