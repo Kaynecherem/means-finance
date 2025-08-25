@@ -1,11 +1,8 @@
 import { DirectusContextClient } from '../utils/types/directus';
 
-// Ensure the Directus client has a valid auth token. If a token exists
-// attempt to refresh it, otherwise signal that the session is missing.
 export async function ensureAuthenticated(client: DirectusContextClient) {
   try {
-    const token = await client.getToken();
-    if (token) {
+    if (client.getToken()) {
       await client.refresh();
       return;
     }
