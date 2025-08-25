@@ -103,10 +103,23 @@ const MyBills: React.FC = () => {
                                 <GetPaidCard bill={bill} loading={isLoading} onUpdate={fetchUserBill} />
                             </Col>
                             <Col xs={24} lg={7}>
-                                <UserCards loading={isPaymentSourceLoading} cards={cards} agencyId={bill?.agency ? (bill.agency as DirectusAgency).id : null} refetch={fetchCardInfo} changeLoading={setIsPaymentSourceLoading} />
+                                <UserCards
+                                    loading={isPaymentSourceLoading}
+                                    cards={cards}
+                                    agencyId={bill?.agency ? (bill.agency as DirectusAgency).id : null}
+                                    refetch={fetchCardInfo}
+                                    changeLoading={setIsPaymentSourceLoading}
+                                    useCustomerModal
+                                />
                             </Col>
                             <Col xs={24} lg={7}>
-                                <UserAccounts loading={isPaymentSourceLoading} bankAccounts={bankAccounts} agencyId={bill?.agency ? (bill.agency as DirectusAgency).id : null} refetch={fetchCardInfo} />
+                                <UserAccounts
+                                    loading={isPaymentSourceLoading}
+                                    bankAccounts={bankAccounts}
+                                    agencyId={bill?.agency ? (bill.agency as DirectusAgency).id : null}
+                                    refetch={fetchCardInfo}
+                                    useCustomerModal
+                                />
                             </Col>
                         </>
                     }

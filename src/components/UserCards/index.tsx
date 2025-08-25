@@ -15,6 +15,7 @@ import CustomButton1 from "../Form/CustomButton1";
 import { LoadingSpinner } from "../LoadingSpinner";
 import MiniCard from "../MiniCard";
 import DeluxePaymentModal, { DeluxeTokenData } from "../DeluxePaymentModal";
+import CustomerDeluxePaymentModal from "../CustomerDeluxePaymentModal";
 import NoCard from "./NoCard";
 import { AddButton, CardChangeButtonWrapper, CardDetailsWrapper, CardIconWrapper, CardInfoWrapper, CardWrapper, DeleteButton, DropdownContent, StyledCarousel, UserCardHeading, UserCardWrapper } from './style';
 
@@ -28,7 +29,8 @@ const UserCards: React.FC<{
     changeLoading?: (state: boolean) => void
     paymentRecordingWith?: PaymentRecordingWith
     selectedCardId?: string
-}> = ({ loading, cards, agencyId, refetch, selectMode, onSelect, changeLoading, paymentRecordingWith, selectedCardId }) => {
+    useCustomerModal?: boolean
+}> = ({ loading, cards, agencyId, refetch, selectMode, onSelect, changeLoading, paymentRecordingWith, selectedCardId, useCustomerModal }) => {
     const { directusClient } = useDirectUs()
     const userId = useSelector((state: RootState) => state.auth.user?.id)
     const [showAddCard, setShowAddCard] = useState(false)
@@ -174,7 +176,22 @@ const UserCards: React.FC<{
                     </Row>
                 </>
             }
-            <DeluxePaymentModal open={showAddCard} onClose={() => setShowAddCard(false)} onPaymentAdd={handleOnCardAdd} paymentType={PaymentType.CARD} />
+            {useCustomerModal ? (
+                <CustomerDeluxePaymentModal
+                    open={showAddCard}
+                    onClose={() => setShowAddCard(false)}
+                    onPaymentAdd={handleOnCardAdd}
+                    paymentType={PaymentType.CARD}
+                    agencyId={agencyId}
+                />
+            ) : (
+                <DeluxePaymentModal
+                    open={showAddCard}
+                    onClose={() => setShowAddCard(false)}
+                    onPaymentAdd={handleOnCardAdd}
+                    paymentType={PaymentType.CARD}
+                />
+            )}
         </UserCardWrapper>
     </MiniCard>
 }
