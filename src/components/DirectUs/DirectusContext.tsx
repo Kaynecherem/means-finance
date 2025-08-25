@@ -1,7 +1,6 @@
-import { authentication, AuthenticationData, createDirectus, rest } from '@directus/sdk';
-import React, { createContext, ReactNode, useContext, useMemo } from 'react';
+import React, { createContext, ReactNode, useContext, useMemo, useEffect } from 'react';
 import { DirectusContextClient } from '../../utils/types/directus';
-import { Schema } from '../../utils/types/schema';
+import { directusClient, restoreSession } from '../../lib/directus';
 
 interface DirectusContextProps {
     directusClient: DirectusContextClient
@@ -23,29 +22,14 @@ export const useDirectUs = () => {
 };
 
 export const DirectusProvider: React.FC<DirectusProviderProps> = ({ children }) => {
+    useEffect(() => {
+        restoreSession();
+    }, []);
+
     const providerValue = useMemo(() => ({
-        directusClient: createDirectus<Schema>('https://meansfinance.directus.app/')
-            .with(
-                authentication(
-                    'json',
-                    {
-                        autoRefresh: true,
-                        storage: {
-                            get: () => {
-                                const data = localStorage.getItem('authenticationData')
-                                if (data) {
-                                    return JSON.parse(data)
-                                }
-                                return null
-                            },
-                            set: (value: AuthenticationData | null) => localStorage.setItem('authenticationData', JSON.stringify(value))
-                        }
-                    }
-                )
-            ).with(
-                rest()
-            )
-    }), [])
+        directusClient
+    }), []);
+
     return (
         <DirectusContext.Provider value={providerValue}>
             {children}
