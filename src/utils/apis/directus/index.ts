@@ -10,6 +10,12 @@ import userMapper from '../../mappers/userMapper';
 import { BankAccount, Card, CountResponse } from '../../types/common';
 import { DirectusContextClient, DirectusError } from "../../types/directus";
 import { CustomDirectusUser, DirectusAgency, DirectusBill, DirectUsCommission, DirectusPayment, DirectusVin } from '../../types/schema';
+import { ensureAuthenticated } from '../../../lib/auth-utils';
+
+const authRequest = async <T>(client: DirectusContextClient, request: any): Promise<T> => {
+    await ensureAuthenticated(client);
+    return client.request(request);
+};
 const formatError = (res: unknown) => {
     return { errors: [res] }
 }
@@ -20,7 +26,7 @@ export const userLogin = async (client: DirectusContextClient, data: { email: st
         throw parseDirectUsErrors(error as DirectusError)
     }
 
-    const directusUser = await client.request(readMe({ fields: ['*', 'role.*'] })) as CustomDirectusUser
+    const directusUser = await authRequest(client, readMe({ fields: ['*', 'role.*'] })) as CustomDirectusUser
 
     const role = directusUser.role as DirectusRole
     if (role.name !== Roles.AGENCY && role.name !== Roles.CLIENT) {
@@ -32,7 +38,7 @@ export const userLogin = async (client: DirectusContextClient, data: { email: st
 
     if (role.name === Roles.AGENCY) {
 
-        const agencies = await client.request(readItems('agency', {
+        const agencies = await authRequest(client, readItems('agency', {
             filter: {
                 agency_manager: directusUser.id
             }
@@ -52,7 +58,7 @@ export const userLogin = async (client: DirectusContextClient, data: { email: st
 
 export const getLoggedInUser = async (client: DirectusContextClient) => {
     try {
-        const directusUser = await client.request(readMe({ fields: ['*', 'role.*'] })) as CustomDirectusUser
+        const directusUser = await authRequest(client, readMe({ fields: ['*', 'role.*'] })) as CustomDirectusUser
 
         const role = directusUser.role as DirectusRole
         if (role.name !== Roles.AGENCY && role.name !== Roles.CLIENT) {
@@ -62,7 +68,7 @@ export const getLoggedInUser = async (client: DirectusContextClient) => {
         let directusAgency: DirectusAgency
 
         if (role.name === Roles.AGENCY) {
-            const agencies = await client.request(readItems('agency', {
+            const agencies = await authRequest(client, readItems('agency', {
                 filter: {
                     agency_manager: directusUser.id,
                 }
@@ -93,7 +99,7 @@ export const logout = async (client: DirectusContextClient) => {
 
 export const getAgencyDeluxePartnerToken = async (client: DirectusContextClient, agencyId: number) => {
     try {
-        const agency = await client.request(readItem('agency', agencyId, { fields: ['deluxe_partner_token'] }));
+        const agency = await authRequest(client, readItem('agency', agencyId, { fields: ['deluxe_partner_token'] }));
         return (agency as DirectusAgency).deluxe_partner_token;
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError);
@@ -101,7 +107,7 @@ export const getAgencyDeluxePartnerToken = async (client: DirectusContextClient,
 }
 export const findCustomerByEmail = async (client: DirectusContextClient, email: string) => {
     try {
-        const users = await client.request(readUsers({
+        const users = await authRequest(client, readUsers({
             filter: {
                 email,
             },
@@ -117,7 +123,7 @@ export const findCustomerByEmail = async (client: DirectusContextClient, email: 
 }
 export const findCustomerByPhone = async (client: DirectusContextClient, phone: string) => {
     try {
-        const users = await client.request(readUsers({
+        const users = await authRequest(client, readUsers({
             filter: {
                 phone,
             },
@@ -136,7 +142,7 @@ export const findOrCreateCustomerSearchByEmail = async (client: DirectusContextC
     if (user) {
         if (data?.deluxe_customer_id || data?.deluxe_vault_id) {
             try {
-                await client.request(updateUser(user.id, {
+                await authRequest(client, updateUser(user.id, {
                     deluxe_customer_id: data?.deluxe_customer_id,
                     deluxe_vault_id: data?.deluxe_vault_id
                 }))
@@ -154,7 +160,7 @@ export const findOrCreateCustomerSearchByEmail = async (client: DirectusContextC
 
     try {
 
-        const role = await client.request(readRoles({
+        const role = await authRequest(client, readRoles({
             filter: { name: "Client" }
         }));
 
@@ -164,7 +170,7 @@ export const findOrCreateCustomerSearchByEmail = async (client: DirectusContextC
         const clientRole = role[0] as DirectusRole
         const newUserData = { ...data, email, role: clientRole.id };
 
-        const newUser = await client.request(createUser(newUserData));
+        const newUser = await authRequest(client, createUser(newUserData));
 
         return newUser as CustomDirectusUser;
     } catch (error) {
@@ -175,7 +181,7 @@ export const findOrCreateCustomerSearchByEmail = async (client: DirectusContextC
 
 export const createBill = async (client: DirectusContextClient, data: Partial<DirectusBill>) => {
     try {
-        const billData = await client.request(createItem("bill", data))
+        const billData = await authRequest(client, createItem("bill", data))
         return billData as DirectusBill
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError)
@@ -183,12 +189,12 @@ export const createBill = async (client: DirectusContextClient, data: Partial<Di
 
 }
 export const createVins = async (client: DirectusContextClient, data: Array<Partial<DirectusVin>>) => {
-    const vins = await client.request(createItems("vin", data))
+    const vins = await authRequest(client, createItems("vin", data))
     return vins as DirectusVin[]
 }
 
 export const getVinsByBill = async (client: DirectusContextClient, billId: number) => {
-    const vins = await client.request(readItems("vin", {
+    const vins = await authRequest(client, readItems("vin", {
         filter: {
             bill: {
                 _eq: billId
@@ -200,7 +206,7 @@ export const getVinsByBill = async (client: DirectusContextClient, billId: numbe
 
 export const getAgencyBillsCounts = async (client: DirectusContextClient, agency: number): Promise<CountResponse> => {
     try {
-        const counts = await client.request(aggregate('bill', {
+        const counts = await authRequest(client, aggregate('bill', {
             query: {
                 filter: {
                     agency: {
@@ -288,7 +294,7 @@ export const getAgencyBills = async (client: DirectusContextClient, agency: numb
                 }
             }
         }
-        const bills = await client.request(readItems('bill', {
+        const bills = await authRequest(client, readItems('bill', {
             filter,
             fields: ['*', 'customer.*'],
             sort: ['-date_created']
@@ -302,7 +308,7 @@ export const getAgencyBills = async (client: DirectusContextClient, agency: numb
 
 export const getAgencyDueBillsByCustomer = async (client: DirectusContextClient, agency: number, customerId: string) => {
     try {
-        const bills = await client.request(readItems('bill', {
+        const bills = await authRequest(client, readItems('bill', {
             filter: {
                 agency: {
                     _eq: agency
@@ -350,7 +356,7 @@ export const searchCustomerByName = async (client: DirectusContextClient, query:
                 ]
             }
         }
-        const res = await client.request(readUsers({
+        const res = await authRequest(client, readUsers({
             filter
         }))
         return res as CustomDirectusUser[]
@@ -361,7 +367,7 @@ export const searchCustomerByName = async (client: DirectusContextClient, query:
 
 export const recordCashPayment = async (client: DirectusContextClient, paymentId: number, payload: { amount: number, cash_credit: number }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'e32ada73-5fb1-4e10-a2f4-3eed7ee0a8c1', {
+        const res = await authRequest(client, triggerFlow('POST', 'e32ada73-5fb1-4e10-a2f4-3eed7ee0a8c1', {
             paymentId,
             ...payload
         }));
@@ -380,7 +386,7 @@ export const recordCashPayment = async (client: DirectusContextClient, paymentId
 
 export const getBillVins = async (client: DirectusContextClient, billId: number) => {
     try {
-        const vins = await client.request(readItems('vin', {
+        const vins = await authRequest(client, readItems('vin', {
             filter: {
                 bill: {
                     _eq: billId
@@ -396,7 +402,7 @@ export const getBillVins = async (client: DirectusContextClient, billId: number)
 
 export const getBillPayments = async (client: DirectusContextClient, billId: number) => {
     try {
-        const payments = await client.request(readItems('payments', {
+        const payments = await authRequest(client, readItems('payments', {
             filter: {
                 bill: {
                     _eq: billId
@@ -412,7 +418,7 @@ export const getBillPayments = async (client: DirectusContextClient, billId: num
 }
 export const getBillById = async (client: DirectusContextClient, billId: number) => {
     try {
-        const bill = await client.request(readItem('bill', billId, { fields: ['*', 'customer.*'] }))
+        const bill = await authRequest(client, readItem('bill', billId, { fields: ['*', 'customer.*'] }))
         return bill as DirectusBill
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError)
@@ -422,7 +428,7 @@ export const getBillById = async (client: DirectusContextClient, billId: number)
 
 export const getCommissionByKey = async (client: DirectusContextClient, key: string) => {
     try {
-        const commission = await client.request(readItem('commission', key))
+        const commission = await authRequest(client, readItem('commission', key))
         return commission as DirectUsCommission
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError)
@@ -432,7 +438,7 @@ export const getCommissionByKey = async (client: DirectusContextClient, key: str
 
 export const getCommissions = async (client: DirectusContextClient) => {
     try {
-        const commission = await client.request(readItems('commission', {
+        const commission = await authRequest(client, readItems('commission', {
             filter: {
                 key: {
                     _in: [
@@ -461,7 +467,7 @@ export const captureCardPayment = async (
         enableAutoPayment: boolean
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '40150a7b-c083-48f8-a2b9-cce82bf24104', payload));
+        const res = await authRequest(client, triggerFlow('POST', '40150a7b-c083-48f8-a2b9-cce82bf24104', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -487,7 +493,7 @@ export const deluxeCreateNewCard = async (
     }
 ) => {
     try {
-        const res = await client.request(triggerFlow('GET', '70d7b733-2b37-4466-9b58-0f793544a955', payload));
+        const res = await authRequest(client, triggerFlow('GET', '70d7b733-2b37-4466-9b58-0f793544a955', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res;
@@ -513,7 +519,7 @@ export const deluxeCreateNewACH = async (
     }
 ) => {
     try {
-        const res = await client.request(triggerFlow('GET', '0f1a4f6b-22b3-4e4c-a604-820317433dc2', payload));
+        const res = await authRequest(client, triggerFlow('GET', '0f1a4f6b-22b3-4e4c-a604-820317433dc2', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res;
@@ -535,7 +541,7 @@ export const captureDeluxeCardPayment = async (
         payment_method_id: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'd8acd9a4-1917-4252-80d3-d11e602fd932', payload));
+        const res = await authRequest(client, triggerFlow('POST', 'd8acd9a4-1917-4252-80d3-d11e602fd932', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -553,7 +559,7 @@ export const updateBillStatus = async (
     status: string
 ) => {
     try {
-        await client.request(updateItem('bill', billId, {
+        await authRequest(client, updateItem('bill', billId, {
             status
         }));
     } catch (error) {
@@ -564,7 +570,7 @@ export const updateBillStatus = async (
 
 export const getTodaysPaymentByAgency = async (client: DirectusContextClient, agencyId: number) => {
     try {
-        const paymentTotal = await client.request(aggregate('payments', {
+        const paymentTotal = await authRequest(client, aggregate('payments', {
             aggregate: {
                 sum: 'value',
             },
@@ -587,7 +593,7 @@ export const getTodaysPaymentByAgency = async (client: DirectusContextClient, ag
 
 export const updateProfile = async (client: DirectusContextClient, data: Partial<CustomDirectusUser>) => {
     try {
-        await client.request(updateMe(data))
+        await authRequest(client, updateMe(data))
     } catch (error) {
         throw parseDirectUsErrors(error as DirectusError)
     }
@@ -595,7 +601,7 @@ export const updateProfile = async (client: DirectusContextClient, data: Partial
 
 export const getCustomerDueBillsByCustomerId = async (client: DirectusContextClient, customer: string) => {
     try {
-        const bills = await client.request(readItems('bill', {
+        const bills = await authRequest(client, readItems('bill', {
             filter: {
                 status: {
                     "_eq": "confirmed"
@@ -616,7 +622,7 @@ export const getCustomerDueBillsByCustomerId = async (client: DirectusContextCli
 
 export const getCustomerDueBills = async (client: DirectusContextClient) => {
     try {
-        const bills = await client.request(readItems('bill', {
+        const bills = await authRequest(client, readItems('bill', {
             filter: {
                 status: {
                     "_eq": "confirmed"
@@ -633,7 +639,7 @@ export const getCustomerDueBills = async (client: DirectusContextClient) => {
 }
 export const getCustomerPaidBills = async (client: DirectusContextClient) => {
     try {
-        const bills = await client.request(readItems('bill', {
+        const bills = await authRequest(client, readItems('bill', {
             filter: {
                 status: {
                     "_eq": "paid"
@@ -655,7 +661,7 @@ export const getCustomerPaymentSources = async (
         customer_id?: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('GET', '7dc49ef5-ff4d-446f-bced-60cbe1f62110', payload));
+        const res = await authRequest(client, triggerFlow('GET', '7dc49ef5-ff4d-446f-bced-60cbe1f62110', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -683,7 +689,7 @@ export const addUserCard = async (
         customer_id?: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'd720ee23-1e90-4a06-8eb1-b1165ce1654f', payload));
+        const res = await authRequest(client, triggerFlow('POST', 'd720ee23-1e90-4a06-8eb1-b1165ce1654f', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -705,7 +711,7 @@ export const addUserAccount = async (
         customer_id?: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '2ca07167-9029-41b9-9cc5-fd7a8cf453b8', payload));
+        const res = await authRequest(client, triggerFlow('POST', '2ca07167-9029-41b9-9cc5-fd7a8cf453b8', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -726,7 +732,7 @@ export const deleteUserCard = async (
         cardId: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '2e95ae4c-0802-46f0-832b-4de88267bffd', payload));
+        const res = await authRequest(client, triggerFlow('POST', '2e95ae4c-0802-46f0-832b-4de88267bffd', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -748,7 +754,7 @@ export const captureACHPayment = async (
         enableAutoPayment: boolean
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '29bd6191-0720-44f3-83d4-35b45fafb651', payload));
+        const res = await authRequest(client, triggerFlow('POST', '29bd6191-0720-44f3-83d4-35b45fafb651', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -771,7 +777,7 @@ export const captureDeluxeACHPayment = async (
         payment_method_id: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '15c1fbc3-db05-4940-ac04-193964544ef8', payload));
+        const res = await authRequest(client, triggerFlow('POST', '15c1fbc3-db05-4940-ac04-193964544ef8', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -789,7 +795,7 @@ export const validateResetPasswordToken = async (
         token: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '57eab0a2-49f1-4119-819c-73a59d7bd602', payload));
+        const res = await authRequest(client, triggerFlow('POST', '57eab0a2-49f1-4119-819c-73a59d7bd602', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -809,7 +815,7 @@ export const resetPassword = async (
         password: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'e2bee49f-fcdc-42d8-8f30-9d55d84adb4c', payload));
+        const res = await authRequest(client, triggerFlow('POST', 'e2bee49f-fcdc-42d8-8f30-9d55d84adb4c', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -830,7 +836,7 @@ export const registerCustomerOnPayArc = async (
         agency: number
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '34dd08cf-a290-43bf-8e5f-3a1f7952865b', payload));
+        const res = await authRequest(client, triggerFlow('POST', '34dd08cf-a290-43bf-8e5f-3a1f7952865b', payload));
 
         if (res.errors && res.errors.length > 0) {
             throw res
@@ -849,7 +855,7 @@ export const resendQuoteConfirmation = async (
         billId: number,
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'b713455b-1b2b-42e4-9cbc-fb27f6e92ca1', payload));
+        const res = await authRequest(client, triggerFlow('POST', 'b713455b-1b2b-42e4-9cbc-fb27f6e92ca1', payload));
         if (res.errors && res.errors.length > 0) {
             throw res
         } else if (!res.errors && res.status > 299) {
@@ -873,7 +879,7 @@ export const updateBillUserPayroll = async (
         paid_on_weekends: boolean
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', '5828eb5e-4445-4ae4-ba7a-c59a058fa3d2', payload));
+        const res = await authRequest(client, triggerFlow('POST', '5828eb5e-4445-4ae4-ba7a-c59a058fa3d2', payload));
         if (res.errors && res.errors.length > 0) {
             throw res
         } else if (!res.errors && res.status > 299) {
@@ -891,7 +897,7 @@ export const forgotPassword = async (
         email: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('POST', 'b5a388e0-a717-4189-8b18-c5c76b0d5f7e', payload));
+        const res = await authRequest(client, triggerFlow('POST', 'b5a388e0-a717-4189-8b18-c5c76b0d5f7e', payload));
         if (res.errors && res.errors.length > 0) {
             throw res
         } else if (!res.errors && res.status > 299) {
@@ -905,7 +911,7 @@ export const forgotPassword = async (
 
 export const getLatestPaymentOfBill = async (client: DirectusContextClient, billId: number) => {
     try {
-        const payments = await client.request(readItems('payments', {
+        const payments = await authRequest(client, readItems('payments', {
             filter: {
                 bill: {
                     _eq: billId
@@ -926,7 +932,7 @@ export const fetchPaymentWithToken = async (
     client: DirectusContextClient,
     token: string) => {
     try {
-        const res = await client.request(triggerFlow('GET', '3849115a-9434-4137-b755-cea860391384', { token }));
+        const res = await authRequest(client, triggerFlow('GET', '3849115a-9434-4137-b755-cea860391384', { token }));
 
         if (res.payment) {
             return res.payment as DirectusPayment
@@ -946,7 +952,7 @@ export const stageCustomerPaymentMethod = async (
         agency: string
     }) => {
     try {
-        const res = await client.request(triggerFlow('GET', '00cdf064-e022-49c8-b91d-8568e6daca78', payload));
+        const res = await authRequest(client, triggerFlow('GET', '00cdf064-e022-49c8-b91d-8568e6daca78', payload));
         if (res.errors && res.errors.length > 0) {
             throw res;
         } else if (!res.errors && res.status > 299) {
@@ -965,7 +971,7 @@ export const fetchCustomerAgencyFlowNew = async (
         agency: string
     }): Promise<any[]> => {
     try {
-        const res: any = await client.request(triggerFlow('GET', 'b578265a-905b-41d4-a19c-fbc47a260600', payload));
+        const res: any = await authRequest(client, triggerFlow('GET', 'b578265a-905b-41d4-a19c-fbc47a260600', payload));
         if (res.errors && res.errors.length > 0) {
             throw res;
         } else if (!res.errors && res.status > 299) {

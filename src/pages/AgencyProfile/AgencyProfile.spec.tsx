@@ -9,7 +9,21 @@ import { useDirectUs } from '../../components/DirectUs/DirectusContext';
 import { getTodaysPaymentByAgency } from '../../utils/apis/directus';
 
 // Mock the Directus context and API call
-jest.mock('@directus/sdk', () => ({}))
+jest.mock('@directus/sdk', () => ({
+    createDirectus: () => ({
+        with: () => ({
+            with: () => ({
+                refresh: jest.fn(),
+                getToken: jest.fn().mockReturnValue('token'),
+                request: jest.fn(),
+                login: jest.fn(),
+                logout: jest.fn(),
+            }),
+        }),
+    }),
+    authentication: () => ({}),
+    rest: () => ({}),
+}))
 jest.mock('../../components/DirectUs/DirectusContext');
 jest.mock('../../utils/apis/directus', () => ({
     getTodaysPaymentByAgency: jest.fn(),
