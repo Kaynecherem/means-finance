@@ -10,6 +10,53 @@ import userMapper from '../../mappers/userMapper';
 import { BankAccount, Card, CountResponse } from '../../types/common';
 import { DirectusContextClient, DirectusError } from "../../types/directus";
 import { CustomDirectusUser, DirectusAgency, DirectusBill, DirectUsCommission, DirectusPayment, DirectusVin } from '../../types/schema';
+
+const DIRECTUS_PUBLIC_FLOW_BASE_URL = 'https://meansfinance.directus.app/flows/trigger';
+
+const triggerDirectusPublicFlow = async (flowId, payload) => {
+    try {
+        const response = await fetch(`${DIRECTUS_PUBLIC_FLOW_BASE_URL}/${flowId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            let errorMessage = 'Failed to process payment.';
+            const errorText = await response.text();
+
+            if (errorText) {
+                try {
+                    const parsedError = JSON.parse(errorText);
+                    if (typeof parsedError === 'string') {
+                        errorMessage = parsedError;
+                    } else if (parsedError?.message) {
+                        errorMessage = parsedError.message;
+                    }
+                } catch {
+                    errorMessage = errorText;
+                }
+            }
+
+            throw new SomethingWentWrongError(errorMessage);
+        }
+    } catch (error) {
+        if (error instanceof SomethingWentWrongError) {
+            throw error;
+        }
+
+        let fallbackMessage = 'Failed to process payment.';
+        if (error instanceof Error && error.message) {
+            fallbackMessage = error.message;
+        } else if (typeof error === 'string' && error) {
+            fallbackMessage = error;
+        }
+
+        throw new SomethingWentWrongError(fallbackMessage);
+    }
+};
 const formatError = (res: unknown) => {
     return { errors: [res] }
 }
@@ -527,26 +574,12 @@ export const deluxeCreateNewACH = async (
 };
 
 export const captureDeluxeCardPayment = async (
-    client: DirectusContextClient,
     payload: {
         customer_id: string,
         agency: string,
         bill_payment_id: number,
         payment_method_id: string
-    }) => {
-    try {
-        const res = await client.request(triggerFlow('POST', 'd8acd9a4-1917-4252-80d3-d11e602fd932', payload));
-
-        if (res.errors && res.errors.length > 0) {
-            throw res
-        } else if (!res.errors && res.status > 299) {
-            throw formatError(res)
-        }
-    } catch (error) {
-        throw parseDirectUsErrors(error as DirectusError)
-    }
-
-}
+    }) => triggerDirectusPublicFlow('d8acd9a4-1917-4252-80d3-d11e602fd932', payload);
 export const updateBillStatus = async (
     client: DirectusContextClient,
     billId: number,
@@ -763,26 +796,12 @@ export const captureACHPayment = async (
 }
 
 export const captureDeluxeACHPayment = async (
-    client: DirectusContextClient,
     payload: {
         customer_id: string,
         agency: string,
         bill_payment_id: number,
         payment_method_id: string
-    }) => {
-    try {
-        const res = await client.request(triggerFlow('POST', '15c1fbc3-db05-4940-ac04-193964544ef8', payload));
-
-        if (res.errors && res.errors.length > 0) {
-            throw res
-        } else if (!res.errors && res.status > 299) {
-            throw formatError(res)
-        }
-    } catch (error) {
-        throw parseDirectUsErrors(error as DirectusError)
-    }
-
-}
+    }) => triggerDirectusPublicFlow('15c1fbc3-db05-4940-ac04-193964544ef8', payload);
 export const validateResetPasswordToken = async (
     client: DirectusContextClient,
     payload: {
