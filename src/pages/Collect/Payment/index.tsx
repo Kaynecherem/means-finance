@@ -10,7 +10,15 @@ import DueNow from "../../../components/DueNow";
 import FormItem from "../../../components/Form/FormItem";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TabRadioSelection from "../../../components/Form/TabRadioSelection";
-import { recordCashPayment, captureDeluxeACHPayment, captureDeluxeCardPayment, stageCustomerPaymentMethod, fetchCustomerAgencyFlowNew, deluxeCreateNewACH, deluxeCreateNewCard } from '../../../utils/apis/directus';
+import {
+    recordCashPayment,
+    stageCustomerPaymentMethod,
+    fetchCustomerAgencyFlowNew,
+    deluxeCreateNewACH,
+    deluxeCreateNewCard,
+    captureDeluxeACHPayment,
+    captureDeluxeCardPayment,
+} from '../../../utils/apis/directus';
 import { PaymentType, Roles } from "../../../utils/enums/common";
 import { RootState } from "../../../utils/redux/store";
 import { BankAccount, Card, PaymentRecordingWith } from '../../../utils/types/common';
@@ -173,15 +181,12 @@ const Payment = () => {
             })
             setPaymentRecording(true)
             const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
-            await captureDeluxeCardPayment(
-                directusClient,
-                {
-                    customer_id: duePayment?.customer as string,
-                    agency: String(agencyId),
-                    bill_payment_id: duePayment?.id as number,
-                    payment_method_id: cardId
-                }
-            )
+            await captureDeluxeCardPayment({
+                customer_id: duePayment?.customer as string,
+                agency: String(agencyId),
+                bill_payment_id: duePayment?.id as number,
+                payment_method_id: cardId
+            })
             navigate(successUrl, { replace: true })
         } catch (error) {
             message.error((error as InternalErrors).message)
@@ -207,15 +212,12 @@ const Payment = () => {
             })
             setPaymentRecording(true)
             const agencyId = typeof duePayment?.agency === 'object' ? (duePayment.agency as DirectusAgency).id : duePayment?.agency
-            await captureDeluxeACHPayment(
-                directusClient,
-                {
-                    customer_id: duePayment?.customer as string,
-                    agency: String(agencyId),
-                    bill_payment_id: duePayment?.id as number,
-                    payment_method_id: accountId
-                }
-            )
+            await captureDeluxeACHPayment({
+                customer_id: duePayment?.customer as string,
+                agency: String(agencyId),
+                bill_payment_id: duePayment?.id as number,
+                payment_method_id: accountId
+            })
             navigate(successUrl, { replace: true })
         } catch (error) {
             message.error((error as InternalErrors).message)
