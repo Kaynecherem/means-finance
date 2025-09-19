@@ -25,6 +25,10 @@ const BillSummary: React.FC = () => {
         navigate('/agency/quote/bill-type')
     }
     const handleNextClick = () => {
+        if (quote.customerSelection === 'existing' && quote.existingCustomerId) {
+            navigate('/agency/quote/customer-info')
+            return
+        }
         navigate('/agency/quote/deluxe-payment')
     }
 
@@ -101,7 +105,9 @@ const BillSummary: React.FC = () => {
 
                     </Col>
                     <Col>
-                        <SubmitButton htmlType="submit" icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
+                        <SubmitButton htmlType="submit" icon={<LuArrowRight />} onClick={handleNextClick}>
+                            {quote.customerSelection === 'existing' && quote.existingCustomerId ? 'Continue' : 'Next'}
+                        </SubmitButton>
                     </Col>
                 </Row>
             </Col>

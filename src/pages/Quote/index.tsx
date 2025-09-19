@@ -26,6 +26,9 @@ const steps = [
         route: '/deluxe-payment'
     },
     {
+        route: '/existing-customer'
+    },
+    {
         route: '/customer-info'
     },
     {

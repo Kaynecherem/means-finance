@@ -23,6 +23,7 @@ const CustomerInfo = lazyWithRetry(() => import('../../pages/Quote/CustomerInfo'
 const Summary = lazyWithRetry(() => import('../../pages/Quote/Summary'))
 const BillSummary = lazyWithRetry(() => import('../../pages/Quote/BillSummary'))
 const DeluxePayment = lazyWithRetry(() => import('../../pages/Quote/DeluxePayment'))
+const ExistingCustomer = lazyWithRetry(() => import('../../pages/Quote/ExistingCustomer'))
 const Quote = lazyWithRetry(() => import('../../pages/Quote'))
 const Collect = lazyWithRetry(() => import('../../pages/Collect'))
 const CollectSearch = lazyWithRetry(() => import('../../pages/Collect/Search'))
@@ -144,6 +145,10 @@ const router = createBrowserRouter([
                             {
                                 path: 'deluxe-payment',
                                 element: <DeluxePayment />
+                            },
+                            {
+                                path: 'existing-customer',
+                                element: <ExistingCustomer />
                             },
                             {
                                 path: 'customer-info',

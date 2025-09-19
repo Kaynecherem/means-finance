@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import SubmitButton from '../../../components/Form/SubmitButton';
 import { useDirectUs } from '../../../components/DirectUs/DirectusContext';
-import { resetQuote } from '../../../utils/redux/slices/quoteSlice';
+import { updateQuote } from '../../../utils/redux/slices/quoteSlice';
 import { updateAgency } from '../../../utils/redux/slices/authSlice';
 import { RootState } from '../../../utils/redux/store';
 import { getAgencyDeluxePartnerToken } from '../../../utils/apis/directus';
@@ -33,12 +33,32 @@ const DeluxePayment: React.FC = () => {
         fetchToken();
     }, [deluxeToken, agencyId, directusClient, dispatch]);
 
-    const handleResetClick = () => {
-        dispatch(resetQuote());
-        navigate('/agency/quote/bill-type');
+    const handleContinueWithExistingCustomer = () => {
+        sessionStorage.removeItem('deluxeData');
+        dispatch(updateQuote({
+            customerSelection: 'existing',
+            existingCustomerId: null,
+            existingCustomerDeluxeCustomerId: null,
+            existingCustomerDeluxeVaultId: null,
+            customerEmail: null,
+            customerFirstName: null,
+            customerLastName: null,
+            customerPhone: null,
+        }));
+        navigate('/agency/quote/existing-customer');
     };
 
-    const handleNextClick = () => {
+    const handleContinueWithNewCustomer = () => {
+        dispatch(updateQuote({
+            customerSelection: 'new',
+            existingCustomerId: null,
+            existingCustomerDeluxeCustomerId: null,
+            existingCustomerDeluxeVaultId: null,
+            customerEmail: null,
+            customerFirstName: null,
+            customerLastName: null,
+            customerPhone: null,
+        }));
         navigate('/agency/quote/customer-info');
     };
 
@@ -131,11 +151,17 @@ const DeluxePayment: React.FC = () => {
             <Col span={24} style={{ marginTop: '32px' }}>
                 <Row gutter={[40, 0]} justify={'center'}>
                     <Col>
-                        <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
+                        <SubmitButton onClick={handleContinueWithExistingCustomer}>
+                            Continue with existing customer
+                        </SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>
-                            Next
+                        <SubmitButton
+                            icon={<LuArrowRight />}
+                            onClick={handleContinueWithNewCustomer}
+                            disabled={!isPaymentAdded}
+                        >
+                            Continue with new customer
                         </SubmitButton>
                     </Col>
                 </Row>

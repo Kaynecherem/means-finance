@@ -45,10 +45,11 @@ describe('DeluxePayment Page', () => {
             },
         });
         (useNavigate as jest.Mock).mockReturnValue(navigate);
+        navigate.mockClear();
         window.alert = jest.fn();
     });
 
-    it('shows iframe with token and disabled next button initially', () => {
+    it('shows iframe with token and disabled new customer button initially', () => {
         render(
             <ThemeProvider theme={mockTheme}>
                 <Provider store={store}>
@@ -61,11 +62,11 @@ describe('DeluxePayment Page', () => {
         expect(iframe).toBeInTheDocument();
         expect(iframe.getAttribute('srcdoc')).toContain(TOKEN);
 
-        expect(screen.getByRole('button', { name: /Next/i })).toBeDisabled();
-        expect(screen.getByRole('button', { name: /Start Over/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Continue with new customer/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /Continue with existing customer/i })).toBeInTheDocument();
     });
 
-    it('enables next button on success message and navigates when clicked', async () => {
+    it('enables new customer button on success message and navigates when clicked', async () => {
         render(
             <ThemeProvider theme={mockTheme}>
                 <Provider store={store}>
@@ -74,8 +75,8 @@ describe('DeluxePayment Page', () => {
             </ThemeProvider>
         );
 
-        const nextButton = screen.getByRole('button', { name: /Next/i });
-        expect(nextButton).toBeDisabled();
+        const newCustomerButton = screen.getByRole('button', { name: /Continue with new customer/i });
+        expect(newCustomerButton).toBeDisabled();
 
         window.dispatchEvent(
             new MessageEvent('message', {
@@ -85,11 +86,26 @@ describe('DeluxePayment Page', () => {
         );
 
         await waitFor(() => {
-            expect(nextButton).toBeEnabled();
+            expect(newCustomerButton).toBeEnabled();
         });
 
-        fireEvent.click(nextButton);
+        fireEvent.click(newCustomerButton);
 
         expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info');
+    });
+
+    it('navigates to existing customer search when existing path is chosen', () => {
+        render(
+            <ThemeProvider theme={mockTheme}>
+                <Provider store={store}>
+                    <DeluxePayment />
+                </Provider>
+            </ThemeProvider>
+        );
+
+        const existingCustomerButton = screen.getByRole('button', { name: /Continue with existing customer/i });
+        fireEvent.click(existingCustomerButton);
+
+        expect(navigate).toHaveBeenCalledWith('/agency/quote/existing-customer');
     });
 });
