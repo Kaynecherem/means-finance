@@ -43,12 +43,15 @@ describe('DeluxePayment Page', () => {
             auth: {
                 agency: { deluxePartnerToken: TOKEN },
             },
+            quote: {},
         });
         (useNavigate as jest.Mock).mockReturnValue(navigate);
+        navigate.mockClear();
         window.alert = jest.fn();
+        store.clearActions();
     });
 
-    it('shows iframe with token and disabled next button initially', () => {
+    it('shows iframe with token, skip control, and disabled next button initially', () => {
         render(
             <ThemeProvider theme={mockTheme}>
                 <Provider store={store}>
@@ -61,6 +64,7 @@ describe('DeluxePayment Page', () => {
         expect(iframe).toBeInTheDocument();
         expect(iframe.getAttribute('srcdoc')).toContain(TOKEN);
 
+        expect(screen.getByRole('button', { name: /Skip/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Next/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /Start Over/i })).toBeInTheDocument();
     });
@@ -91,5 +95,39 @@ describe('DeluxePayment Page', () => {
         fireEvent.click(nextButton);
 
         expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info');
+    });
+
+    it('skips to existing customer search and clears stored deluxe data', () => {
+        sessionStorage.setItem('deluxeData', JSON.stringify({ foo: 'bar' }));
+        render(
+            <ThemeProvider theme={mockTheme}>
+                <Provider store={store}>
+                    <DeluxePayment />
+                </Provider>
+            </ThemeProvider>
+        );
+
+        const skipButton = screen.getByRole('button', { name: /Skip/i });
+        fireEvent.click(skipButton);
+
+        expect(navigate).toHaveBeenCalledWith('/agency/quote/existing-customer');
+        expect(sessionStorage.getItem('deluxeData')).toBeNull();
+    });
+
+    it('resets quote and navigates to bill type when start over is clicked', () => {
+        render(
+            <ThemeProvider theme={mockTheme}>
+                <Provider store={store}>
+                    <DeluxePayment />
+                </Provider>
+            </ThemeProvider>
+        );
+
+        const startOverButton = screen.getByRole('button', { name: /Start Over/i });
+        fireEvent.click(startOverButton);
+
+        expect(navigate).toHaveBeenCalledWith('/agency/quote/bill-type');
+        const actions = store.getActions();
+        expect(actions).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'auth/resetQuote' })]));
     });
 });

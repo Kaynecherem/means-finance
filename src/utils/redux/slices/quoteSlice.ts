@@ -22,7 +22,11 @@ const quoteReducerInitialState: StoreQuote = {
     customerLastName: null,
     customerPhone: null,
     policyId: null,
-    vins: []
+    vins: [],
+    customerSelection: null,
+    existingCustomerId: null,
+    existingCustomerDeluxeCustomerId: null,
+    existingCustomerDeluxeVaultId: null
 }
 export const quoteSlice = createSlice({
     name: 'auth',

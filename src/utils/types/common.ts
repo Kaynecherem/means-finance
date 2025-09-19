@@ -20,6 +20,10 @@ export type StoreQuote = {
     customerPhone: string | null
     policyId: string | null
     vins: VIN[]
+    customerSelection: 'new' | 'existing' | null
+    existingCustomerId: string | null
+    existingCustomerDeluxeCustomerId: string | null
+    existingCustomerDeluxeVaultId: string | null
 }
 
 export type StoreCollect = {

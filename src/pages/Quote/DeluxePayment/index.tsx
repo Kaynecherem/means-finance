@@ -1,11 +1,11 @@
-import { Col, Row } from 'antd';
+import { Button, Col, Row } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { LuArrowRight } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import SubmitButton from '../../../components/Form/SubmitButton';
 import { useDirectUs } from '../../../components/DirectUs/DirectusContext';
-import { resetQuote } from '../../../utils/redux/slices/quoteSlice';
+import { resetQuote, updateQuote } from '../../../utils/redux/slices/quoteSlice';
 import { updateAgency } from '../../../utils/redux/slices/authSlice';
 import { RootState } from '../../../utils/redux/store';
 import { getAgencyDeluxePartnerToken } from '../../../utils/apis/directus';
@@ -34,12 +34,29 @@ const DeluxePayment: React.FC = () => {
     }, [deluxeToken, agencyId, directusClient, dispatch]);
 
     const handleResetClick = () => {
+        sessionStorage.removeItem('deluxeData');
         dispatch(resetQuote());
         navigate('/agency/quote/bill-type');
     };
 
     const handleNextClick = () => {
+        dispatch(updateQuote({ customerSelection: 'new' }));
         navigate('/agency/quote/customer-info');
+    };
+
+    const handleSkipClick = () => {
+        sessionStorage.removeItem('deluxeData');
+        dispatch(updateQuote({
+            customerSelection: 'existing',
+            existingCustomerId: null,
+            existingCustomerDeluxeCustomerId: null,
+            existingCustomerDeluxeVaultId: null,
+            customerEmail: null,
+            customerFirstName: null,
+            customerLastName: null,
+            customerPhone: null,
+        }));
+        navigate('/agency/quote/existing-customer');
     };
 
     useEffect(() => {
@@ -118,6 +135,11 @@ const DeluxePayment: React.FC = () => {
 
     return (
         <Row gutter={[0, 20]} justify={"center"}>
+            <Col span={24} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button type="link" onClick={handleSkipClick}>
+                    Skip
+                </Button>
+            </Col>
             <Col span={24} style={{ textAlign: 'center' }}>
                 <PageHeader level={2}>Add Customer To Deluxe</PageHeader>
             </Col>
@@ -131,10 +153,16 @@ const DeluxePayment: React.FC = () => {
             <Col span={24} style={{ marginTop: '32px' }}>
                 <Row gutter={[40, 0]} justify={'center'}>
                     <Col>
-                        <SubmitButton danger onClick={handleResetClick}>Start Over</SubmitButton>
+                        <SubmitButton danger onClick={handleResetClick}>
+                            Start Over
+                        </SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton icon={<LuArrowRight />} onClick={handleNextClick} disabled={!isPaymentAdded}>
+                        <SubmitButton
+                            icon={<LuArrowRight />}
+                            onClick={handleNextClick}
+                            disabled={!isPaymentAdded}
+                        >
                             Next
                         </SubmitButton>
                     </Col>

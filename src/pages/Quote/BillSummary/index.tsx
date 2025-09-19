@@ -8,7 +8,7 @@ import SubmitButton from '../../../components/Form/SubmitButton';
 import billDueCalculation from "../../../utils/helpers/billDueCalculation";
 import getDueLabel from "../../../utils/helpers/getDueLabel";
 import getInstallmentLabel from "../../../utils/helpers/getInstallmentLabel";
-import { resetQuote } from "../../../utils/redux/slices/quoteSlice";
+import { resetQuote, updateQuote } from "../../../utils/redux/slices/quoteSlice";
 import { RootState } from '../../../utils/redux/store';
 import { AmountWrapper, BilledDetails, DownPaymentWrapper, SummaryDetails, SummaryWrapper } from "./style";
 
@@ -24,8 +24,33 @@ const BillSummary: React.FC = () => {
         dispatch(resetQuote())
         navigate('/agency/quote/bill-type')
     }
-    const handleNextClick = () => {
+    const handleContinueWithNew = () => {
+        dispatch(updateQuote({
+            customerSelection: 'new',
+            existingCustomerId: null,
+            existingCustomerDeluxeCustomerId: null,
+            existingCustomerDeluxeVaultId: null,
+            customerEmail: null,
+            customerFirstName: null,
+            customerLastName: null,
+            customerPhone: null,
+        }))
         navigate('/agency/quote/deluxe-payment')
+    }
+
+    const handleContinueWithExisting = () => {
+        sessionStorage.removeItem('deluxeData')
+        dispatch(updateQuote({
+            customerSelection: 'existing',
+            existingCustomerId: null,
+            existingCustomerDeluxeCustomerId: null,
+            existingCustomerDeluxeVaultId: null,
+            customerEmail: null,
+            customerFirstName: null,
+            customerLastName: null,
+            customerPhone: null,
+        }))
+        navigate('/agency/quote/existing-customer')
     }
 
     return (
@@ -97,11 +122,17 @@ const BillSummary: React.FC = () => {
             <Col span={24} style={{ marginTop: "32px" }}>
                 <Row gutter={[40, 0]} justify={'center'}>
                     <Col>
-                        <SubmitButton danger htmlType="submit" onClick={handleResetClick}>Start Over</SubmitButton>
-
+                        <SubmitButton danger htmlType="button" onClick={handleResetClick}>Start Over</SubmitButton>
                     </Col>
                     <Col>
-                        <SubmitButton htmlType="submit" icon={<LuArrowRight />} onClick={handleNextClick}>Next</SubmitButton>
+                        <SubmitButton htmlType="button" icon={<LuArrowRight />} onClick={handleContinueWithNew}>
+                            Continue with new
+                        </SubmitButton>
+                    </Col>
+                    <Col>
+                        <SubmitButton htmlType="button" icon={<LuArrowRight />} onClick={handleContinueWithExisting}>
+                            Continue with existing
+                        </SubmitButton>
                     </Col>
                 </Row>
             </Col>
