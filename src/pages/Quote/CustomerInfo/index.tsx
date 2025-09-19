@@ -11,7 +11,7 @@ import SelectField from "../../../components/Form/SelectField";
 import SubmitButton from "../../../components/Form/SubmitButton";
 import TextField from "../../../components/Form/TextField";
 import VinInput from "../../../components/Form/VinInput/VinInput";
-import { createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId, registerCustomerOnPayArc } from '../../../utils/apis/directus/index';
+import { createBill, createVins, findCustomerByEmail, findOrCreateCustomerSearchByEmail, getCustomerDueBillsByCustomerId } from '../../../utils/apis/directus/index';
 import { emailRegEx } from "../../../utils/contants/regex";
 import { BillTypeEnum, CustomerPayFrequency, QuoteFrequency } from '../../../utils/enums/common';
 import billDueCalculation from '../../../utils/helpers/billDueCalculation';
@@ -174,7 +174,26 @@ const CustomerInfo: React.FC = () => {
                     }
                 }
 
-                const customer: CustomDirectusUser = await getCustomer(values, { deluxeCustomerId, deluxeVaultId })
+                let customer: CustomDirectusUser | null = null
+
+                if (quote.customerSelection === 'existing' && quote.existingCustomerId) {
+                    if (selectedCustomer && selectedCustomer.id === quote.existingCustomerId) {
+                        customer = selectedCustomer
+                    } else {
+                        customer = await findCustomerByEmail(directusClient, values.customerEmail) ?? null
+                    }
+
+                    if (!customer) {
+                        message.error('Unable to locate the selected customer.')
+                        return
+                    }
+                } else {
+                    customer = await getCustomer(values, { deluxeCustomerId, deluxeVaultId })
+                }
+                if (!customer) {
+                    message.error('Unable to process customer information.')
+                    return
+                }
                 const alreadyDueBills = await getCustomerDueBillsByCustomerId(directusClient, customer.id)
                 if (alreadyDueBills && alreadyDueBills.length > 0) {
                     message.error("Customer is already having one due policy.")
@@ -182,10 +201,6 @@ const CustomerInfo: React.FC = () => {
                 }
                 const calculatedQuoteInfo = billDueCalculation(quote)
 
-                await registerCustomerOnPayArc(directusClient, {
-                    agency: agencyId,
-                    customer: customer.id
-                })
                 const bill = await createBill(directusClient, generateBillPayload(customer, values, calculatedQuoteInfo))
 
                 if (values.vins?.length > 0) {
@@ -208,7 +223,7 @@ const CustomerInfo: React.FC = () => {
         } finally {
             setIsSaving(false)
         }
-    }, [agencyId, directusClient, dispatch, generateBillPayload, getCustomer, navigate, quote, validateForm])
+    }, [agencyId, directusClient, dispatch, generateBillPayload, getCustomer, navigate, quote, selectedCustomer, validateForm])
 
     return (
         <Form requiredMark={false} layout="vertical" initialValues={quote} onFinish={handleNextClick} form={form}>

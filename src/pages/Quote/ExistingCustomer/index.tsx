@@ -1,11 +1,13 @@
 import { AutoComplete, Col, message, Row, Spin } from "antd";
-import { ReactNode, useCallback, useMemo, useState } from "react";
-import { LuSearch } from 'react-icons/lu';
-import { useDispatch } from "react-redux";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { LuArrowRight, LuSearch } from 'react-icons/lu';
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useDirectUs } from '../../../components/DirectUs/DirectusContext';
 import TextField from "../../../components/Form/TextField";
-import { updateQuote } from "../../../utils/redux/slices/quoteSlice";
+import SubmitButton from "../../../components/Form/SubmitButton";
+import { resetQuote, updateQuote } from "../../../utils/redux/slices/quoteSlice";
+import { RootState } from '../../../utils/redux/store';
 import { InternalErrors } from "../../../utils/types/errors";
 import { CustomDirectusUser } from "../../../utils/types/schema";
 import { searchCustomerByName } from "../../../utils/apis/directus";
@@ -22,8 +24,19 @@ const ExistingCustomer: React.FC = () => {
     const { directusClient } = useDirectUs();
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const quote = useSelector(({ quote: stateQuote }: RootState) => stateQuote);
     const [options, setOptions] = useState<CustomDirectusUser[]>([]);
     const [fetching, setFetching] = useState(false);
+    const [inputValue, setInputValue] = useState('');
+
+    useEffect(() => {
+        if (quote.existingCustomerId) {
+            const fullName = `${quote.customerFirstName ?? ''} ${quote.customerLastName ?? ''}`.trim();
+            if (fullName) {
+                setInputValue(fullName);
+            }
+        }
+    }, [quote.customerFirstName, quote.customerLastName, quote.existingCustomerId]);
 
     const handleSearch = useCallback(async (query: string) => {
         const trimmedQuery = query.trim();
@@ -48,6 +61,7 @@ const ExistingCustomer: React.FC = () => {
             message.error('Selected customer is missing an email address.');
             return;
         }
+        setInputValue(`${customer.first_name ?? ''} ${customer.last_name ?? ''}`.trim());
         dispatch(updateQuote({
             customerSelection: 'existing',
             existingCustomerId: customer.id,
@@ -69,9 +83,21 @@ const ExistingCustomer: React.FC = () => {
         } else {
             sessionStorage.removeItem('deluxeData');
         }
+    }, [dispatch]);
 
-        navigate('/agency/quote/bill-summary');
+    const handleStartOver = useCallback(() => {
+        sessionStorage.removeItem('deluxeData');
+        dispatch(resetQuote());
+        navigate('/agency/quote/bill-type');
     }, [dispatch, navigate]);
+
+    const handleContinue = useCallback(() => {
+        if (!quote.existingCustomerId) {
+            message.error('Please select a customer before continuing.');
+            return;
+        }
+        navigate('/agency/quote/customer-info');
+    }, [navigate, quote.existingCustomerId]);
 
     const autocompleteOptions = useMemo(() => options.map<OptionType>((customer) => ({
         value: String(customer.id),
@@ -102,6 +128,25 @@ const ExistingCustomer: React.FC = () => {
                             options={autocompleteOptions}
                             onSearch={handleSearch}
                             onSelect={handleSelect}
+                            value={inputValue}
+                            onChange={(value) => {
+                                setInputValue(value);
+                                const selectedName = `${quote.customerFirstName ?? ''} ${quote.customerLastName ?? ''}`.trim();
+                                const shouldClearSelection = !value || (quote.existingCustomerId && value !== selectedName);
+
+                                if (shouldClearSelection) {
+                                    dispatch(updateQuote({
+                                        existingCustomerId: null,
+                                        existingCustomerDeluxeCustomerId: null,
+                                        existingCustomerDeluxeVaultId: null,
+                                        customerEmail: null,
+                                        customerFirstName: null,
+                                        customerLastName: null,
+                                        customerPhone: null,
+                                    }));
+                                    sessionStorage.removeItem('deluxeData');
+                                }
+                            }}
                             notFoundContent={fetching ? (
                                 <LoadingDropDownRender>
                                     <Spin size='small' />
@@ -111,6 +156,18 @@ const ExistingCustomer: React.FC = () => {
                             <TextField placeholder="Type a customer's name" />
                         </AutoComplete>
                     </SearchByNameWrapper>
+                </Col>
+                <Col span={24} style={{ marginTop: '40px' }}>
+                    <Row gutter={[40, 0]} justify={'center'}>
+                        <Col>
+                            <SubmitButton danger onClick={handleStartOver}>Start Over</SubmitButton>
+                        </Col>
+                        <Col>
+                            <SubmitButton icon={<LuArrowRight />} onClick={handleContinue} disabled={!quote.existingCustomerId}>
+                                Continue
+                            </SubmitButton>
+                        </Col>
+                    </Row>
                 </Col>
             </Row>
         </ExistingCustomerWrapper>
