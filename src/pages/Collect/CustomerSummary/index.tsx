@@ -102,23 +102,17 @@ const CustomerSummary = () => {
                 const directusPayments = await getBillPayments(directusClient, bill.id)
 
                 const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
-                let prioritizedPayment: DirectusPayment | null = null
+                const selectedPayment = targetPaymentId
+                    ? directusPayments.find(payment => payment.id === targetPaymentId) ?? null
+                    : null
 
-                if (directusPayments.length > 0) {
-                    if (targetPaymentId) {
-                        prioritizedPayment = directusPayments.find(payment => payment.id === targetPaymentId) ?? null
-                    }
-
-                    if (!prioritizedPayment) {
-                        prioritizedPayment = directusPayments.find(payment => payment.status !== 'paid') ?? null
-                    }
-                }
+                const firstNonPaid = directusPayments.find(payment => payment.status !== 'paid') ?? null
 
                 const hasUpcomingPayment = directusPayments.some(payment => payment.status === 'upcoming')
                 const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
                     ? {
                         status: "upcoming" as DirectusPayment['status'],
-                        id: 0,
+                        id: -1,
                         bill: null,
                         down_payment: false,
                         due_date: bill.next_installment_date,
@@ -135,17 +129,35 @@ const CustomerSummary = () => {
                     ? [upcomingPayment, ...directusPayments]
                     : directusPayments
 
-                const displayPayment = prioritizedPayment ?? (normalizedPayments.length > 0 ? normalizedPayments[0] : null)
+                const displayPayment = selectedPayment ?? firstNonPaid ?? (normalizedPayments.length > 0 ? normalizedPayments[0] : null)
 
-                setDuePayment(prioritizedPayment ?? null)
-                setStatusPayment(displayPayment ?? null)
+                const isPayable = (payment: DirectusPayment | null) => {
+                    if (!payment || payment.id <= 0) {
+                        return false;
+                    }
 
-                const normalizedSelectedId = prioritizedPayment?.id ?? null
+                    const normalizedStatus = (payment.status ?? '').toLowerCase();
+
+                    if (!normalizedStatus || normalizedStatus === 'pending' || normalizedStatus === 'paid') {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                const payablePayment = isPayable(selectedPayment)
+                    ? selectedPayment
+                    : directusPayments.find(payment => isPayable(payment)) ?? null
+
+                setDuePayment(payablePayment);
+                setStatusPayment(displayPayment ?? null);
+
+                const normalizedSelectedId = payablePayment?.id ?? null
                 if (selectedPaymentId !== normalizedSelectedId) {
-                    dispatch(updateCollect({ selectedPaymentId: normalizedSelectedId }))
+                    dispatch(updateCollect({ selectedPaymentId: normalizedSelectedId }));
                 }
 
-                setPayments(normalizedPayments)
+                setPayments(normalizedPayments);
             } else {
                 setPayments([])
                 setDuePayment(null)

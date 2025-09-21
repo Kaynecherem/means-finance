@@ -36,7 +36,7 @@ const PaymentHistory: React.FC<{
                 if (!hasUpcomingPayment && bill?.next_installment_date) {
                     const upcomingPayment: DirectusPayment = {
                         status: "upcoming",
-                        id: 0,
+                        id: -1,
                         bill: null,
                         down_payment: false,
                         due_date: bill.next_installment_date,
@@ -67,6 +67,9 @@ const PaymentHistory: React.FC<{
     }, [fetchPayments])
 
     const handlePayNow = (payment: DirectusPayment) => {
+        if (payment.id <= 0) {
+            return
+        }
         if (!bill) {
             return
         }
@@ -120,9 +123,16 @@ const PaymentHistory: React.FC<{
             key: 'action',
             dataIndex: 'id',
             align: 'right',
-            render: (_, record) => record.status === 'missed'
-                ? <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>
-                : null
+            render: (_, record) => {
+                const normalizedStatus = (record.status ?? '').toLowerCase()
+                const canPayNow = record.id > 0
+                    && normalizedStatus !== 'pending'
+                    && (normalizedStatus === 'missed' || normalizedStatus === 'upcoming')
+
+                return canPayNow
+                    ? <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>
+                    : null
+            }
         }
     ]
     return (<CustomModal
