@@ -15,6 +15,7 @@ import FormIcon from "../../../components/Form/FormIcon"
 import { getBillPayments, getBillVins, stageCustomerPaymentMethod } from "../../../utils/apis/directus"
 import { BillTypeEnum } from "../../../utils/enums/common"
 import billTypeMapper from '../../../utils/helpers/billTypeMapper'
+import normalizePaymentStatus from '../../../utils/helpers/normalizePaymentStatus'
 import { updateCollect } from "../../../utils/redux/slices/collectSlice"
 import { RootState } from '../../../utils/redux/store'
 import { InternalErrors } from "../../../utils/types/errors"
@@ -42,7 +43,10 @@ const CustomerSummary = () => {
             title: "Status",
             key: 'status',
             dataIndex: "status",
-            render: (text: string) => <StatusWrapper status={text}>{text}</StatusWrapper>,
+            render: (_: string, record) => {
+                const status = normalizePaymentStatus(record)
+                return <StatusWrapper status={status}>{status}</StatusWrapper>
+            },
             align: "left"
         },
         {
@@ -57,16 +61,20 @@ const CustomerSummary = () => {
             key: "amount",
             dataIndex: "value",
             align: 'right',
-            render: (amount: string, record) => <div>
-                ${Number(amount).toFixed(2)}
-                {record.method === 'cash' &&
-                    <TableHelperText>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</TableHelperText>
-                }
-                {bill && record.status === 'upcoming' && Number(bill.credit_amount ?? 0) > 0 &&
-                    <TableHelperText>{`Credit - $${Number(bill.credit_amount).toFixed(2)}`}</TableHelperText>
+            render: (amount: string, record) => {
+                const status = normalizePaymentStatus(record)
 
-                }
-            </div>
+                return <div>
+                    ${Number(amount).toFixed(2)}
+                    {record.method === 'cash' &&
+                        <TableHelperText>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</TableHelperText>
+                    }
+                    {bill && status === 'upcoming' && Number(bill.credit_amount ?? 0) > 0 &&
+                        <TableHelperText>{`Credit - $${Number(bill.credit_amount).toFixed(2)}`}</TableHelperText>
+
+                    }
+                </div>
+            }
         }
     ]
     const fetchVins = useCallback(async () => {
@@ -101,14 +109,12 @@ const CustomerSummary = () => {
             if (bill?.id) {
                 const directusPayments = await getBillPayments(directusClient, bill.id)
 
-                const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
-                const selectedPayment = targetPaymentId
-                    ? directusPayments.find(payment => payment.id === targetPaymentId) ?? null
-                    : null
+                const paymentsWithStatus = directusPayments.map(payment => ({
+                    ...payment,
+                    status: normalizePaymentStatus(payment) ?? payment.status
+                }))
 
-                const firstNonPaid = directusPayments.find(payment => payment.status !== 'paid') ?? null
-
-                const hasUpcomingPayment = directusPayments.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+                const hasUpcomingPayment = paymentsWithStatus.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
                 const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
                     ? {
                         status: "upcoming" as DirectusPayment['status'],
@@ -126,8 +132,15 @@ const CustomerSummary = () => {
                     : null
 
                 const normalizedPayments = upcomingPayment
-                    ? [upcomingPayment, ...directusPayments]
-                    : directusPayments
+                    ? [upcomingPayment, ...paymentsWithStatus]
+                    : paymentsWithStatus
+
+                const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
+                const selectedPayment = targetPaymentId
+                    ? normalizedPayments.find(payment => payment.id === targetPaymentId) ?? null
+                    : null
+
+                const firstNonPaid = normalizedPayments.find(payment => (payment.status ?? '').toLowerCase() !== 'paid') ?? null
 
                 const displayPayment = selectedPayment ?? firstNonPaid ?? (normalizedPayments.length > 0 ? normalizedPayments[0] : null)
 
@@ -136,18 +149,18 @@ const CustomerSummary = () => {
                         return false;
                     }
 
-                    const normalizedStatus = (payment.status ?? '').toLowerCase();
+                    const normalizedStatus = normalizePaymentStatus(payment);
 
                     if (!normalizedStatus || normalizedStatus === 'pending' || normalizedStatus === 'paid') {
                         return false;
                     }
 
-                    return true;
+                    return normalizedStatus === 'missed' || normalizedStatus === 'upcoming';
                 };
 
                 const payablePayment = isPayable(selectedPayment)
                     ? selectedPayment
-                    : directusPayments.find(payment => isPayable(payment)) ?? null
+                    : normalizedPayments.find(payment => isPayable(payment)) ?? null
 
                 setDuePayment(payablePayment);
                 setStatusPayment(displayPayment ?? null);
@@ -204,7 +217,10 @@ const CustomerSummary = () => {
             return '0 min'
         }
     }
-    const isPaidStatus = statusPayment?.status === 'paid'
+    const normalizedStatus = statusPayment ? normalizePaymentStatus(statusPayment) : null
+    const isPaidStatus = normalizedStatus === 'paid'
+    const isPendingStatus = normalizedStatus === 'pending'
+    const isPayDisabled = !duePayment || isPendingStatus
 
     return (
         <BoxWrapper>
@@ -217,8 +233,8 @@ const CustomerSummary = () => {
                                     <Col span={24}>
                                         <CustomerName>
                                             <span>{customer.first_name} {customer.last_name}</span>
-                                            {statusPayment?.status &&
-                                                <StatusPill status={statusPayment.status}>{statusPayment.status}</StatusPill>
+                                            {normalizedStatus &&
+                                                <StatusPill status={normalizedStatus}>{normalizedStatus}</StatusPill>
                                             }
                                             {/* <Button type='link'><LuPenSquare /></Button> */}
                                         </CustomerName>
@@ -292,7 +308,7 @@ const CustomerSummary = () => {
                                         </Col>
                                     }
                                     <Col span={24}>
-                                        <PayButton onClick={handlePay} disabled={!duePayment || duePayment.status === 'pending'}>Pay</PayButton>
+                                        <PayButton onClick={handlePay} disabled={isPayDisabled}>Pay</PayButton>
                                     </Col>
                                 </Row>
                             </SummaryWrapper>

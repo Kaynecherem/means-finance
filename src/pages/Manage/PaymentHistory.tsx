@@ -15,6 +15,7 @@ import { InternalErrors } from '../../utils/types/errors';
 import { DirectusBill, DirectusPayment } from "../../utils/types/schema";
 import { BillAmountWrapper } from '../MyBills/style';
 import { StatusWrapper } from '../style';
+import normalizePaymentStatus from '../../utils/helpers/normalizePaymentStatus';
 
 const PaymentHistory: React.FC<{
     open?: boolean
@@ -30,28 +31,33 @@ const PaymentHistory: React.FC<{
         try {
             setPaymentsLoading(true)
             if (bill?.id) {
-                let paymentsRes = await getBillPayments(directusClient, bill.id)
-                const hasUpcomingPayment = paymentsRes.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+                const paymentsRes = await getBillPayments(directusClient, bill.id)
+                const normalizedPayments = paymentsRes.map(payment => ({
+                    ...payment,
+                    status: normalizePaymentStatus(payment) ?? payment.status
+                }))
+                const hasUpcomingPayment = normalizedPayments.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
 
-                if (!hasUpcomingPayment && bill?.next_installment_date) {
-                    const upcomingPayment: DirectusPayment = {
-                        status: "upcoming",
-                        id: -1,
-                        bill: null,
-                        down_payment: false,
-                        due_date: bill.next_installment_date,
-                        paid_date: null,
-                        method: null,
-                        customer: null,
-                        value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
-                        cash_payment: null,
-                        agency: null
-                    }
+                const data = (!hasUpcomingPayment && bill?.next_installment_date)
+                    ? [
+                        {
+                            status: "upcoming",
+                            id: -1,
+                            bill: null,
+                            down_payment: false,
+                            due_date: bill.next_installment_date,
+                            paid_date: null,
+                            method: null,
+                            customer: null,
+                            value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
+                            cash_payment: null,
+                            agency: null
+                        } as DirectusPayment,
+                        ...normalizedPayments
+                    ]
+                    : normalizedPayments
 
-                    paymentsRes = [upcomingPayment, ...paymentsRes]
-                }
-
-                setDataSource(paymentsRes)
+                setDataSource(data)
             } else {
                 setDataSource([])
             }
@@ -90,7 +96,10 @@ const PaymentHistory: React.FC<{
             title: "Status",
             key: 'status',
             dataIndex: "status",
-            render: (text: string) => <StatusWrapper status={text}>{text}</StatusWrapper>,
+            render: (_: string, record) => {
+                const status = normalizePaymentStatus(record)
+                return <StatusWrapper status={status}>{status}</StatusWrapper>
+            },
             align: "left"
         },
         {
@@ -105,18 +114,22 @@ const PaymentHistory: React.FC<{
             key: "amount",
             dataIndex: "value",
             align: 'right',
-            render: (amount: string, record) => <BillAmountWrapper>
-                <div className='amount'>{`$${Number(amount).toFixed(2)}`}</div>
-                {record.method === 'cash' &&
-                    <div className='due-count'>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</div>
-                }
-                {record.status === 'upcoming' && Number(bill?.credit_amount ?? 0) > 0 &&
-                    <>
-                        <div className='due-count'>{`Installment - $${Number(bill?.installments).toFixed(2)}`}</div>
-                        <div className='due-count'>{`Credit - $${Number(bill?.credit_amount).toFixed(2)}`}</div>
-                    </>
-                }
-            </BillAmountWrapper>
+            render: (amount: string, record) => {
+                const status = normalizePaymentStatus(record)
+
+                return <BillAmountWrapper>
+                    <div className='amount'>{`$${Number(amount).toFixed(2)}`}</div>
+                    {record.method === 'cash' &&
+                        <div className='due-count'>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</div>
+                    }
+                    {status === 'upcoming' && Number(bill?.credit_amount ?? 0) > 0 &&
+                        <>
+                            <div className='due-count'>{`Installment - $${Number(bill?.installments).toFixed(2)}`}</div>
+                            <div className='due-count'>{`Credit - $${Number(bill?.credit_amount).toFixed(2)}`}</div>
+                        </>
+                    }
+                </BillAmountWrapper>
+            },
         },
         {
             title: '',
@@ -124,10 +137,9 @@ const PaymentHistory: React.FC<{
             dataIndex: 'id',
             align: 'right',
             render: (_, record) => {
-                const normalizedStatus = (record.status ?? '').toLowerCase()
+                const status = normalizePaymentStatus(record)
                 const canPayNow = record.id > 0
-                    && normalizedStatus !== 'pending'
-                    && (normalizedStatus === 'missed' || normalizedStatus === 'upcoming')
+                    && (status === 'missed' || status === 'upcoming')
 
                 return canPayNow
                     ? <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>

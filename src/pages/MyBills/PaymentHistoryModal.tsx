@@ -1,8 +1,9 @@
 import LoadingOutlined from '@ant-design/icons/LoadingOutlined';
-import { message } from 'antd';
+import { Button, message } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import moment from 'moment';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CustomizedTable from '../../components/CustomisedTable';
 import CustomModal from '../../components/CustomModal';
 import { useDirectUs } from '../../components/DirectUs/DirectusContext';
@@ -11,6 +12,7 @@ import { InternalErrors } from '../../utils/types/errors';
 import { DirectusAgency, DirectusBill, DirectusPayment } from '../../utils/types/schema';
 import { StatusWrapper } from '../style';
 import { BillAmountWrapper, BillDueDateWrapper } from './style';
+import normalizePaymentStatus from '../../utils/helpers/normalizePaymentStatus';
 const PaymentHistoryModal: React.FC<{
     open?: boolean
     bill?: DirectusBill | null
@@ -20,12 +22,17 @@ const PaymentHistoryModal: React.FC<{
     const [dataSource, setDataSource] = useState<DirectusPayment[]>([])
     const [paymentsLoading, setPaymentsLoading] = useState(true)
     const { directusClient } = useDirectUs()
+    const navigate = useNavigate()
     const fetchPayments = useCallback(async () => {
         try {
             setPaymentsLoading(true)
             if (bill?.id) {
                 const paymentsRes = await getBillPayments(directusClient, bill.id)
-                setDataSource(paymentsRes)
+                const normalizedPayments = paymentsRes.map(payment => ({
+                    ...payment,
+                    status: normalizePaymentStatus(payment) ?? payment.status
+                }))
+                setDataSource(normalizedPayments)
             } else {
                 setDataSource([])
             }
@@ -45,7 +52,10 @@ const PaymentHistoryModal: React.FC<{
             title: "Status",
             key: 'status',
             dataIndex: "status",
-            render: (text: string) => <StatusWrapper status={text}>{text}</StatusWrapper>,
+            render: (_: string, record) => {
+                const status = normalizePaymentStatus(record)
+                return <StatusWrapper status={status}>{status}</StatusWrapper>
+            },
             align: "left"
         },
         {
@@ -63,6 +73,31 @@ const PaymentHistoryModal: React.FC<{
             render: (amount: string) => <BillAmountWrapper>
                 <div className='amount'>${Number(amount).toFixed(2)}</div>
             </BillAmountWrapper>
+        },
+        {
+            title: '',
+            key: 'action',
+            dataIndex: 'id',
+            align: 'right',
+            render: (_: number, record) => {
+                const status = normalizePaymentStatus(record)
+                const canPayNow = record.id > 0 && (status === 'missed' || status === 'upcoming')
+
+                if (!canPayNow) {
+                    return null
+                }
+
+                const handlePayNow = () => {
+                    props.onClose?.()
+                    navigate('/payment', {
+                        state: {
+                            duePayment: record
+                        }
+                    })
+                }
+
+                return <Button type='link' size='small' onClick={handlePayNow}>Pay now</Button>
+            }
         }
     ]
 
