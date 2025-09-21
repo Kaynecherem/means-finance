@@ -108,7 +108,7 @@ const CustomerSummary = () => {
 
                 const firstNonPaid = directusPayments.find(payment => payment.status !== 'paid') ?? null
 
-                const hasUpcomingPayment = directusPayments.some(payment => payment.status === 'upcoming')
+                const hasUpcomingPayment = directusPayments.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
                 const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
                     ? {
                         status: "upcoming" as DirectusPayment['status'],

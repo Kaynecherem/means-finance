@@ -31,7 +31,7 @@ const PaymentHistory: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 let paymentsRes = await getBillPayments(directusClient, bill.id)
-                const hasUpcomingPayment = paymentsRes.some(payment => payment.status === 'upcoming')
+                const hasUpcomingPayment = paymentsRes.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
 
                 if (!hasUpcomingPayment && bill?.next_installment_date) {
                     const upcomingPayment: DirectusPayment = {
