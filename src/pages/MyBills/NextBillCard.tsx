@@ -11,6 +11,7 @@ import { InternalErrors } from '../../utils/types/errors'
 import { DirectusBill, DirectusPayment } from "../../utils/types/schema"
 import { StatusWrapper } from '../style'
 import { NextBillAmountWrapper, NextBillCardWrapper, NextBillDueDate, NextBillHeading } from "./style"
+import normalizePaymentStatus from '../../utils/helpers/normalizePaymentStatus'
 
 const NextBillCard: React.FC<{
     bill?: DirectusBill | null
@@ -24,8 +25,10 @@ const NextBillCard: React.FC<{
             try {
                 setLoading(true)
                 const paymentRes = await getLatestPaymentOfBill(directusClient, bill?.id)
-                if (paymentRes && (paymentRes.status === 'pending' || paymentRes.status === 'missed')) {
-                    setDuePayment(paymentRes)
+                const normalizedStatus = paymentRes ? normalizePaymentStatus(paymentRes) : null
+
+                if (paymentRes && normalizedStatus && (normalizedStatus === 'pending' || normalizedStatus === 'missed' || normalizedStatus === 'upcoming')) {
+                    setDuePayment({ ...paymentRes, status: normalizedStatus })
                 } else {
                     setDuePayment(null)
                 }

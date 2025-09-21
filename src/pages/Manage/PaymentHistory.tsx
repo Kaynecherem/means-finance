@@ -32,11 +32,15 @@ const PaymentHistory: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 const paymentsRes = await getBillPayments(directusClient, bill.id)
-                const normalizedPayments = paymentsRes.map(payment => ({
-                    ...payment,
-                    status: normalizePaymentStatus(payment) ?? payment.status
-                }))
-                const hasUpcomingPayment = normalizedPayments.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+                const normalizedPayments = paymentsRes.map(payment => {
+                    const normalizedStatus = normalizePaymentStatus(payment)
+
+                    return {
+                        ...payment,
+                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
+                    }
+                })
+                const hasUpcomingPayment = normalizedPayments.some(payment => normalizePaymentStatus(payment) === 'upcoming')
 
                 const data = (!hasUpcomingPayment && bill?.next_installment_date)
                     ? [

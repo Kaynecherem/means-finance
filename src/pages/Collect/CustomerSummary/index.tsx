@@ -109,12 +109,16 @@ const CustomerSummary = () => {
             if (bill?.id) {
                 const directusPayments = await getBillPayments(directusClient, bill.id)
 
-                const paymentsWithStatus = directusPayments.map(payment => ({
-                    ...payment,
-                    status: normalizePaymentStatus(payment) ?? payment.status
-                }))
+                const paymentsWithStatus = directusPayments.map(payment => {
+                    const normalizedStatus = normalizePaymentStatus(payment)
 
-                const hasUpcomingPayment = paymentsWithStatus.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+                    return {
+                        ...payment,
+                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
+                    }
+                })
+
+                const hasUpcomingPayment = paymentsWithStatus.some(payment => normalizePaymentStatus(payment) === 'upcoming')
                 const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
                     ? {
                         status: "upcoming" as DirectusPayment['status'],

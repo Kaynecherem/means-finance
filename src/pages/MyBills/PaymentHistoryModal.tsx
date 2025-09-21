@@ -28,10 +28,14 @@ const PaymentHistoryModal: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 const paymentsRes = await getBillPayments(directusClient, bill.id)
-                const normalizedPayments = paymentsRes.map(payment => ({
-                    ...payment,
-                    status: normalizePaymentStatus(payment) ?? payment.status
-                }))
+                const normalizedPayments = paymentsRes.map(payment => {
+                    const normalizedStatus = normalizePaymentStatus(payment)
+
+                    return {
+                        ...payment,
+                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
+                    }
+                })
                 setDataSource(normalizedPayments)
             } else {
                 setDataSource([])
