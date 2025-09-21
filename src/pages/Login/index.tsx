@@ -1,8 +1,8 @@
 import { Col, Form, message, Row, Typography } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LuArrowRight, LuLock, LuUser } from "react-icons/lu";
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import Box from "../../components/Box";
 import BoxContainer from "../../components/BoxContainer";
 import BoxWrapper from "../../components/BoxWrapper";
@@ -11,13 +11,13 @@ import FormItem from "../../components/Form/FormItem";
 import PasswordField from "../../components/Form/PasswordField";
 import SubmitButton from "../../components/Form/SubmitButton";
 import TextField from "../../components/Form/TextField";
-import { userLogin } from '../../utils/apis/directus/index';
+import { getLoggedInUser, userLogin } from '../../utils/apis/directus/index';
 import { Roles } from "../../utils/enums/common";
-import { agencyLoginAction, customerLoginAction, logoutAction } from "../../utils/redux/slices/authSlice";
-import { resetCollect } from '../../utils/redux/slices/collectSlice';
-import { resetQuote } from '../../utils/redux/slices/quoteSlice';
+import { agencyLoginAction, customerLoginAction } from "../../utils/redux/slices/authSlice";
 import { RootState } from '../../utils/redux/store';
 import { InternalErrors } from "../../utils/types/errors";
+import getDefaultRoute from "../../utils/helpers/getDefaultRoute";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { ForgotPasswordLinkWrapper, LoginPageWrapper } from "./style";
 
 type FormValuesType = {
@@ -30,14 +30,40 @@ const Login: React.FC = () => {
     const navigate = useNavigate()
     const [isInProgress, setIsInProgress] = useState(false)
     const isLoggedIn = useSelector(({ auth }: RootState) => auth.isLoggedIn)
+    const role = useSelector(({ auth }: RootState) => auth.role)
+    const [isVerifyingSession, setIsVerifyingSession] = useState(true)
+
     useEffect(() => {
-        if (isLoggedIn) {
-            dispatch(resetQuote())
-            dispatch(resetCollect())
-            dispatch(logoutAction())
+        const verifySession = async () => {
+            if (isLoggedIn) {
+                setIsVerifyingSession(false)
+                return
+            }
+
+            const authData = localStorage.getItem('authenticationData')
+            if (!authData) {
+                setIsVerifyingSession(false)
+                return
+            }
+
+            try {
+                const { agency, user, role: userRole } = await getLoggedInUser(directusClient)
+                if (userRole.name === Roles.AGENCY && agency) {
+                    dispatch(agencyLoginAction({ user, agency }))
+                } else if (userRole.name === Roles.CLIENT) {
+                    dispatch(customerLoginAction({ user }))
+                }
+            } catch {
+                // ignore session validation errors
+            } finally {
+                setIsVerifyingSession(false)
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+
+        verifySession()
+    }, [directusClient, dispatch, isLoggedIn])
+
+    const defaultRoute = useMemo(() => getDefaultRoute(role), [role])
     const handleLoginSubmit = async (value: FormValuesType) => {
         setIsInProgress(true)
         try {
@@ -49,10 +75,10 @@ const Login: React.FC = () => {
                 dispatch(agencyLoginAction({
                     user, agency
                 }))
-                navigate('/agency/manage')
+                navigate(getDefaultRoute(Roles.AGENCY))
             } else if (role.name === Roles.CLIENT) {
                 dispatch(customerLoginAction({ user }))
-                navigate('/my-bills')
+                navigate(getDefaultRoute(Roles.CLIENT))
             } else {
                 message.error("Something went wrong.")
             }
@@ -62,6 +88,13 @@ const Login: React.FC = () => {
             setIsInProgress(false)
         }
 
+    }
+    if (isLoggedIn && defaultRoute !== '/login') {
+        return <Navigate to={defaultRoute} replace />
+    }
+
+    if (!isLoggedIn && isVerifyingSession) {
+        return <LoadingSpinner fullScreen />
     }
     return (
         <BoxContainer>

@@ -29,6 +29,7 @@ export type StoreQuote = {
 export type StoreCollect = {
     customer?: CustomDirectusUser | null
     bill?: DirectusBill
+    selectedPaymentId?: number | null
 }
 export type Agency = {
     id: number,

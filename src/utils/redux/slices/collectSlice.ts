@@ -4,6 +4,7 @@ import { StoreCollect } from "../../types/common";
 
 
 const collectReducerInitialState: StoreCollect = {
+    selectedPaymentId: null,
 }
 
 export const collectSlice = createSlice({

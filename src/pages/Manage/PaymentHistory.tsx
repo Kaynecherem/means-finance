@@ -1,12 +1,16 @@
 import LoadingOutlined from '@ant-design/icons/LoadingOutlined';
-import { message } from 'antd';
+import { Button, message } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import moment from 'moment';
 import { useCallback, useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import CustomizedTable from "../../components/CustomisedTable";
 import CustomModal from '../../components/CustomModal';
 import { useDirectUs } from '../../components/DirectUs/DirectusContext';
 import { getBillPayments } from '../../utils/apis/directus';
+import { updateCollect } from '../../utils/redux/slices/collectSlice';
+import { castCustomer } from '../../utils/typeFilters/castCustomer';
 import { InternalErrors } from '../../utils/types/errors';
 import { DirectusBill, DirectusPayment } from "../../utils/types/schema";
 import { BillAmountWrapper } from '../MyBills/style';
@@ -20,29 +24,33 @@ const PaymentHistory: React.FC<{
     const [dataSource, setDataSource] = useState<DirectusPayment[]>([])
     const [paymentsLoading, setPaymentsLoading] = useState(true)
     const { directusClient } = useDirectUs()
+    const navigate = useNavigate()
+    const dispatch = useDispatch()
     const fetchPayments = useCallback(async () => {
         try {
             setPaymentsLoading(true)
             if (bill?.id) {
                 let paymentsRes = await getBillPayments(directusClient, bill.id)
-                if (bill?.status === 'confirmed') {
-                    paymentsRes = [
-                        {
-                            status: "upcoming",
-                            id: 0,
-                            bill: null,
-                            down_payment: false,
-                            due_date: bill.next_installment_date,
-                            paid_date: null,
-                            method: null,
-                            customer: null,
-                            value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
-                            cash_payment: null,
-                            agency: null
-                        },
-                        ...paymentsRes,
-                    ]
+                const hasUpcomingPayment = paymentsRes.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+
+                if (!hasUpcomingPayment && bill?.next_installment_date) {
+                    const upcomingPayment: DirectusPayment = {
+                        status: "upcoming",
+                        id: -1,
+                        bill: null,
+                        down_payment: false,
+                        due_date: bill.next_installment_date,
+                        paid_date: null,
+                        method: null,
+                        customer: null,
+                        value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
+                        cash_payment: null,
+                        agency: null
+                    }
+
+                    paymentsRes = [upcomingPayment, ...paymentsRes]
                 }
+
                 setDataSource(paymentsRes)
             } else {
                 setDataSource([])
@@ -57,6 +65,25 @@ const PaymentHistory: React.FC<{
     useEffect(() => {
         fetchPayments()
     }, [fetchPayments])
+
+    const handlePayNow = (payment: DirectusPayment) => {
+        if (payment.id <= 0) {
+            return
+        }
+        if (!bill) {
+            return
+        }
+
+        dispatch(updateCollect({
+            bill,
+            customer: castCustomer(bill.customer),
+            selectedPaymentId: payment.id
+        }))
+
+        navigate('/agency/collect/customer-summary', {
+            state: { paymentId: payment.id }
+        })
+    }
 
     const columns: ColumnsType<DirectusPayment> = [
         {
@@ -90,6 +117,22 @@ const PaymentHistory: React.FC<{
                     </>
                 }
             </BillAmountWrapper>
+        },
+        {
+            title: '',
+            key: 'action',
+            dataIndex: 'id',
+            align: 'right',
+            render: (_, record) => {
+                const normalizedStatus = (record.status ?? '').toLowerCase()
+                const canPayNow = record.id > 0
+                    && normalizedStatus !== 'pending'
+                    && (normalizedStatus === 'missed' || normalizedStatus === 'upcoming')
+
+                return canPayNow
+                    ? <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>
+                    : null
+            }
         }
     ]
     return (<CustomModal

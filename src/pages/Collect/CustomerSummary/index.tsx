@@ -4,8 +4,8 @@ import { ColumnsType } from "antd/es/table"
 import moment from "moment"
 import { useCallback, useEffect, useState } from "react"
 import { LuDollarSign } from "react-icons/lu"
-import { useSelector } from 'react-redux'
-import { useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from 'react-redux'
+import { useLocation, useNavigate } from "react-router-dom"
 import BillIcon from "../../../components/BillIcon"
 import Box from "../../../components/Box"
 import BoxWrapper from "../../../components/BoxWrapper"
@@ -15,23 +15,28 @@ import FormIcon from "../../../components/Form/FormIcon"
 import { getBillPayments, getBillVins, stageCustomerPaymentMethod } from "../../../utils/apis/directus"
 import { BillTypeEnum } from "../../../utils/enums/common"
 import billTypeMapper from '../../../utils/helpers/billTypeMapper'
+import { updateCollect } from "../../../utils/redux/slices/collectSlice"
 import { RootState } from '../../../utils/redux/store'
 import { InternalErrors } from "../../../utils/types/errors"
 import { DirectusAgency, DirectusPayment, DirectusVin } from "../../../utils/types/schema"
 import { PageSubHeader, StatusWrapper } from "../../style"
 import { CustomerName } from "../style"
-import { BillDueWrapper, PayButton, PaymentHistoryTable, PolicyInfo, SummaryWrapper, TableHelperText } from "./style"
+import { BillDueWrapper, PayButton, PaymentHistoryTable, PolicyInfo, StatusPill, SummaryWrapper, TableHelperText } from "./style"
 
 const CustomerSummary = () => {
     const navigate = useNavigate()
+    const location = useLocation()
     const customer = useSelector(({ collect }: RootState) => collect.customer)
     const bill = useSelector(({ collect }: RootState) => collect.bill)
+    const selectedPaymentId = useSelector(({ collect }: RootState) => collect.selectedPaymentId)
     const [vins, setVins] = useState<Array<DirectusVin>>([])
     const [vinsLoading, setVinsLoading] = useState(true)
     const [paymentsLoading, setPaymentsLoading] = useState(true)
     const [payments, setPayments] = useState<Array<DirectusPayment>>([])
     const [duePayment, setDuePayment] = useState<DirectusPayment | null>(null);
+    const [statusPayment, setStatusPayment] = useState<DirectusPayment | null>(null);
     const { directusClient } = useDirectUs()
+    const dispatch = useDispatch()
     const columns: ColumnsType<DirectusPayment> = [
         {
             title: "Status",
@@ -88,42 +93,82 @@ const CustomerSummary = () => {
         fetchVins()
     }, [fetchVins])
 
+    const locationPaymentId = (location.state as { paymentId?: number } | null)?.paymentId
+
     const fetchPayments = useCallback(async () => {
         try {
             setPaymentsLoading(true)
             if (bill?.id) {
-                let paymentsRes = await getBillPayments(directusClient, bill.id)
+                const directusPayments = await getBillPayments(directusClient, bill.id)
 
-                if (paymentsRes.length > 0) {
-                    const lastPayment = paymentsRes[0]
-                    if (lastPayment.status !== 'paid') {
-                        setDuePayment(lastPayment)
-                    }
-                }
-                paymentsRes = [
-                    {
-                        status: "upcoming",
-                        id: 0,
+                const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
+                const selectedPayment = targetPaymentId
+                    ? directusPayments.find(payment => payment.id === targetPaymentId) ?? null
+                    : null
+
+                const firstNonPaid = directusPayments.find(payment => payment.status !== 'paid') ?? null
+
+                const hasUpcomingPayment = directusPayments.some(payment => (payment.status ?? '').toLowerCase() === 'upcoming')
+                const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
+                    ? {
+                        status: "upcoming" as DirectusPayment['status'],
+                        id: -1,
                         bill: null,
                         down_payment: false,
                         due_date: bill.next_installment_date,
                         paid_date: null,
                         method: null,
                         customer: null,
-                        value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
+                        value: `${Number(bill.installments ?? 0) - Number(bill.credit_amount ?? 0)}`,
                         cash_payment: null,
                         agency: null
-                    },
-                    ...paymentsRes,
-                ]
-                setPayments(paymentsRes)
+                    } as DirectusPayment
+                    : null
+
+                const normalizedPayments = upcomingPayment
+                    ? [upcomingPayment, ...directusPayments]
+                    : directusPayments
+
+                const displayPayment = selectedPayment ?? firstNonPaid ?? (normalizedPayments.length > 0 ? normalizedPayments[0] : null)
+
+                const isPayable = (payment: DirectusPayment | null) => {
+                    if (!payment || payment.id <= 0) {
+                        return false;
+                    }
+
+                    const normalizedStatus = (payment.status ?? '').toLowerCase();
+
+                    if (!normalizedStatus || normalizedStatus === 'pending' || normalizedStatus === 'paid') {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                const payablePayment = isPayable(selectedPayment)
+                    ? selectedPayment
+                    : directusPayments.find(payment => isPayable(payment)) ?? null
+
+                setDuePayment(payablePayment);
+                setStatusPayment(displayPayment ?? null);
+
+                const normalizedSelectedId = payablePayment?.id ?? null
+                if (selectedPaymentId !== normalizedSelectedId) {
+                    dispatch(updateCollect({ selectedPaymentId: normalizedSelectedId }));
+                }
+
+                setPayments(normalizedPayments);
+            } else {
+                setPayments([])
+                setDuePayment(null)
+                setStatusPayment(null)
             }
         } catch (error) {
             message.error((error as InternalErrors).message)
         } finally {
             setPaymentsLoading(false)
         }
-    }, [bill, directusClient])
+    }, [bill, directusClient, dispatch, locationPaymentId, selectedPaymentId])
     useEffect(() => {
         fetchPayments()
     }, [fetchPayments])
@@ -137,6 +182,7 @@ const CustomerSummary = () => {
                     agency: String(agencyId)
                 })
             }
+            dispatch(updateCollect({ selectedPaymentId: duePayment?.id ?? null }))
             navigate('/agency/collect/payment', {
                 state: {
                     duePayment
@@ -158,6 +204,8 @@ const CustomerSummary = () => {
             return '0 min'
         }
     }
+    const isPaidStatus = statusPayment?.status === 'paid'
+
     return (
         <BoxWrapper>
             <Row gutter={[24, 24]}>
@@ -168,16 +216,19 @@ const CustomerSummary = () => {
                                 <Row gutter={[0, 24]}>
                                     <Col span={24}>
                                         <CustomerName>
-                                            {customer.first_name} {customer.last_name}
+                                            <span>{customer.first_name} {customer.last_name}</span>
+                                            {statusPayment?.status &&
+                                                <StatusPill status={statusPayment.status}>{statusPayment.status}</StatusPill>
+                                            }
                                             {/* <Button type='link'><LuPenSquare /></Button> */}
                                         </CustomerName>
                                     </Col>
                                     <Col span={24}>
                                         <BillDueWrapper>
-                                            {duePayment?.due_date &&
+                                            {statusPayment?.due_date && !isPaidStatus &&
                                                 <>
                                                     <div className='text'>Bill due in</div>
-                                                    <div className='time'>{getDueDuration(duePayment.due_date)}</div>
+                                                    <div className='time'>{getDueDuration(statusPayment.due_date)}</div>
                                                 </>
                                             }
                                         </BillDueWrapper>
@@ -235,13 +286,13 @@ const CustomerSummary = () => {
                                             <Skeleton.Node active style={{ width: '350px', height: "117px" }}><LuDollarSign /></Skeleton.Node>
                                         </Col>
                                     }
-                                    {!paymentsLoading && duePayment?.value &&
+                                    {!paymentsLoading && statusPayment?.value && !isPaidStatus &&
                                         <Col span={24} style={{ paddingTop: "16px" }}>
-                                            <DueNow amount={Number(duePayment.value)} type="danger" />
+                                            <DueNow amount={Number(statusPayment.value)} type="danger" />
                                         </Col>
                                     }
                                     <Col span={24}>
-                                        <PayButton onClick={handlePay} disabled={!duePayment || Number(duePayment.value) <= 0}>Pay</PayButton>
+                                        <PayButton onClick={handlePay} disabled={!duePayment || duePayment.status === 'pending'}>Pay</PayButton>
                                     </Col>
                                 </Row>
                             </SummaryWrapper>

@@ -4,6 +4,7 @@ import AuthenticationWrapper from "../../components/AuhenticationWrapper";
 import BoxContainer from "../../components/BoxContainer";
 import LayoutProvider from "../../components/LayoutProvider";
 import RouteError from "../../components/RouteError";
+import RootRedirect from "../../components/RootRedirect";
 import { Roles } from "../enums/common";
 
 const Login = lazyWithRetry(() => import('../../pages/Login'))
@@ -46,7 +47,7 @@ const router = createBrowserRouter([
         children: [
             {
                 path: "/",
-                element: <Navigate to={'/login'} replace />,
+                element: <RootRedirect />,
             },
             {
                 path: "login",

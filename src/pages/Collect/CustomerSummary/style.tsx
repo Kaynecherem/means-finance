@@ -2,6 +2,7 @@ import { Table } from "antd";
 import { AnyObject } from "antd/es/_util/type";
 import styled from "styled-components";
 import SubmitButton from "../../../components/Form/SubmitButton";
+import { getStatusColor, StatusWrapper } from "../../style";
 
 export const SummaryWrapper = styled.div`
     padding: 40px;
@@ -68,6 +69,18 @@ export const PayButton = styled(SubmitButton)`
     font-weight: 500;
     line-height: 18px;
     margin-top: 16px;
+`
+
+export const StatusPill = styled(StatusWrapper)`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    background-color: ${({ theme, status }) => `${getStatusColor(theme, status)}1A`};
 `
 export const PaymentHistoryTable = styled(Table) <AnyObject>`
     background: none;

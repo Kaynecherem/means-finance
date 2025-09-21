@@ -24,7 +24,7 @@ export const PageSubHeader = styled(Typography.Title)`
     margin-bottom: 2px;
     color: ${({ theme }) => theme.color900};
 `
-const getStatusColor = (theme: DefaultTheme, status?: string | null) => {
+export const getStatusColor = (theme: DefaultTheme, status?: string | null) => {
     switch (status) {
         case "missed":
             return theme.colorError500

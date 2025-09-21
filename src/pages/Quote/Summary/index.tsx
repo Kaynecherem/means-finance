@@ -43,7 +43,8 @@ const Summary: React.FC = () => {
                     }
                     dispatch(updateCollect({
                         bill,
-                        customer: bill.customer as CustomDirectusUser
+                        customer: bill.customer as CustomDirectusUser,
+                        selectedPaymentId: null
                     }))
                     dispatch(resetQuote())
                     navigate('/agency/collect/customer-summary')
