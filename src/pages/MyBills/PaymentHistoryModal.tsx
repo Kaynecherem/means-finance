@@ -77,11 +77,12 @@ const PaymentHistoryModal: React.FC<{
             align: 'right',
             render: (_: number, record) => {
                 const status = normalizePaymentStatus(record)
+                const rawStatus = (record.status ?? '').trim().toLowerCase()
                 const canPayNow = record.id > 0
                     && (
                         status === 'missed'
                         || status === 'upcoming'
-                        || status === null
+                        || rawStatus === ''
                     )
 
                 if (!canPayNow) {

@@ -14,20 +14,24 @@ const normalizePaymentStatus = (
         return 'missed';
     }
 
-    if (payment.due_date) {
-        const dueDate = moment(payment.due_date);
-        const today = moment();
-
-        if (dueDate.isAfter(today, 'day')) {
-            return 'upcoming';
-        }
-    }
-
     if (rawStatus === 'pending') {
         return 'pending';
     }
 
-    return rawStatus || null;
+    if (!rawStatus) {
+        if (payment.due_date) {
+            const dueDate = moment(payment.due_date);
+            const today = moment();
+
+            if (dueDate.isAfter(today, 'day')) {
+                return 'upcoming';
+            }
+        }
+
+        return null;
+    }
+
+    return rawStatus;
 };
 
 export default normalizePaymentStatus;
