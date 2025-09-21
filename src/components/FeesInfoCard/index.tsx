@@ -18,11 +18,14 @@ const FeesInfoCard: React.FC<{
     const [loading, setLoading] = useState(false)
 
     const [fees, setFees] = useState<Array<Record<string, string>>>([])
-    const getExtraFields = (commission: number) => {
+    const getExtraFields = (value: number, isPercentage: boolean) => {
         const extraFields: Record<string, string> = {}
         if (fields) {
             for (const element of fields) {
-                extraFields[element.key] = `$${Number(element.amount + (element.amount * (Number(commission) / 100))).toFixed(2)}`;
+                const updatedAmount = isPercentage
+                    ? element.amount + (element.amount * (value / 100))
+                    : element.amount + value
+                extraFields[element.key] = `$${Number(updatedAmount).toFixed(2)}`;
             }
         }
         return extraFields
@@ -41,7 +44,7 @@ const FeesInfoCard: React.FC<{
                     type: 'Debit/Credit Card',
                     fees: `${Number(card.value).toFixed(2)}%`,
                     amount: amount ? `$${Number(amount + (amount * (Number(card.value) / 100))).toFixed(2)}` : '',
-                    ...getExtraFields(Number(card.value))
+                    ...getExtraFields(Number(card.value), true)
                 })
             }
 
@@ -51,7 +54,7 @@ const FeesInfoCard: React.FC<{
                     type: 'ACH/Direct Bank Debit',
                     fees: `$${Number(directDebit.value).toFixed(2)}`,
                     amount: amount ? `$${Number(amount + Number(directDebit.value)).toFixed(2)}` : '',
-                    ...getExtraFields(Number(directDebit.value))
+                    ...getExtraFields(Number(directDebit.value), false)
                 })
             }
 
