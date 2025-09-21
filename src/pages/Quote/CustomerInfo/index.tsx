@@ -195,8 +195,13 @@ const CustomerInfo: React.FC = () => {
                     return
                 }
                 const alreadyDueBills = await getCustomerDueBillsByCustomerId(directusClient, customer.id)
-                if (alreadyDueBills && alreadyDueBills.length > 0) {
-                    message.error("Customer is already having one due policy.")
+                const normalizedIncomingPolicyId = values.policyId?.trim().toLowerCase()
+                const hasBillWithSamePolicy = normalizedIncomingPolicyId
+                    ? alreadyDueBills?.some(bill => bill.policy_id?.trim().toLowerCase() === normalizedIncomingPolicyId)
+                    : false
+
+                if (hasBillWithSamePolicy) {
+                    message.error('Customer already has an active bill for this policy.')
                     return
                 }
                 const calculatedQuoteInfo = billDueCalculation(quote)
