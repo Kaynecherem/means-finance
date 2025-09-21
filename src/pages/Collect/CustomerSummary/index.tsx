@@ -34,6 +34,7 @@ const CustomerSummary = () => {
     const [paymentsLoading, setPaymentsLoading] = useState(true)
     const [payments, setPayments] = useState<Array<DirectusPayment>>([])
     const [duePayment, setDuePayment] = useState<DirectusPayment | null>(null);
+    const [statusPayment, setStatusPayment] = useState<DirectusPayment | null>(null);
     const { directusClient } = useDirectUs()
     const dispatch = useDispatch()
     const columns: ColumnsType<DirectusPayment> = [
@@ -98,30 +99,25 @@ const CustomerSummary = () => {
         try {
             setPaymentsLoading(true)
             if (bill?.id) {
-                let paymentsRes = await getBillPayments(directusClient, bill.id)
+                const directusPayments = await getBillPayments(directusClient, bill.id)
 
                 const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
                 let prioritizedPayment: DirectusPayment | null = null
 
-                if (paymentsRes.length > 0) {
+                if (directusPayments.length > 0) {
                     if (targetPaymentId) {
-                        prioritizedPayment = paymentsRes.find(payment => payment.id === targetPaymentId) ?? null
+                        prioritizedPayment = directusPayments.find(payment => payment.id === targetPaymentId) ?? null
                     }
 
                     if (!prioritizedPayment) {
-                        prioritizedPayment = paymentsRes.find(payment => payment.status !== 'paid') ?? null
+                        prioritizedPayment = directusPayments.find(payment => payment.status !== 'paid') ?? null
                     }
                 }
 
-                setDuePayment(prioritizedPayment ?? null)
-                const normalizedSelectedId = prioritizedPayment?.id ?? null
-                if (selectedPaymentId !== normalizedSelectedId) {
-                    dispatch(updateCollect({ selectedPaymentId: normalizedSelectedId }))
-                }
-
-                paymentsRes = [
-                    {
-                        status: "upcoming",
+                const hasUpcomingPayment = directusPayments.some(payment => payment.status === 'upcoming')
+                const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
+                    ? {
+                        status: "upcoming" as DirectusPayment['status'],
                         id: 0,
                         bill: null,
                         down_payment: false,
@@ -129,13 +125,31 @@ const CustomerSummary = () => {
                         paid_date: null,
                         method: null,
                         customer: null,
-                        value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
+                        value: `${Number(bill.installments ?? 0) - Number(bill.credit_amount ?? 0)}`,
                         cash_payment: null,
                         agency: null
-                    },
-                    ...paymentsRes,
-                ]
-                setPayments(paymentsRes)
+                    } as DirectusPayment
+                    : null
+
+                const normalizedPayments = upcomingPayment
+                    ? [upcomingPayment, ...directusPayments]
+                    : directusPayments
+
+                const displayPayment = prioritizedPayment ?? (normalizedPayments.length > 0 ? normalizedPayments[0] : null)
+
+                setDuePayment(prioritizedPayment ?? null)
+                setStatusPayment(displayPayment ?? null)
+
+                const normalizedSelectedId = prioritizedPayment?.id ?? null
+                if (selectedPaymentId !== normalizedSelectedId) {
+                    dispatch(updateCollect({ selectedPaymentId: normalizedSelectedId }))
+                }
+
+                setPayments(normalizedPayments)
+            } else {
+                setPayments([])
+                setDuePayment(null)
+                setStatusPayment(null)
             }
         } catch (error) {
             message.error((error as InternalErrors).message)
@@ -178,6 +192,8 @@ const CustomerSummary = () => {
             return '0 min'
         }
     }
+    const isPaidStatus = statusPayment?.status === 'paid'
+
     return (
         <BoxWrapper>
             <Row gutter={[24, 24]}>
@@ -189,18 +205,18 @@ const CustomerSummary = () => {
                                     <Col span={24}>
                                         <CustomerName>
                                             <span>{customer.first_name} {customer.last_name}</span>
-                                            {duePayment?.status &&
-                                                <StatusPill status={duePayment.status}>{duePayment.status}</StatusPill>
+                                            {statusPayment?.status &&
+                                                <StatusPill status={statusPayment.status}>{statusPayment.status}</StatusPill>
                                             }
                                             {/* <Button type='link'><LuPenSquare /></Button> */}
                                         </CustomerName>
                                     </Col>
                                     <Col span={24}>
                                         <BillDueWrapper>
-                                            {duePayment?.due_date &&
+                                            {statusPayment?.due_date && !isPaidStatus &&
                                                 <>
                                                     <div className='text'>Bill due in</div>
-                                                    <div className='time'>{getDueDuration(duePayment.due_date)}</div>
+                                                    <div className='time'>{getDueDuration(statusPayment.due_date)}</div>
                                                 </>
                                             }
                                         </BillDueWrapper>
@@ -258,13 +274,13 @@ const CustomerSummary = () => {
                                             <Skeleton.Node active style={{ width: '350px', height: "117px" }}><LuDollarSign /></Skeleton.Node>
                                         </Col>
                                     }
-                                    {!paymentsLoading && duePayment?.value &&
+                                    {!paymentsLoading && statusPayment?.value && !isPaidStatus &&
                                         <Col span={24} style={{ paddingTop: "16px" }}>
-                                            <DueNow amount={Number(duePayment.value)} type="danger" />
+                                            <DueNow amount={Number(statusPayment.value)} type="danger" />
                                         </Col>
                                     }
                                     <Col span={24}>
-                                        <PayButton onClick={handlePay} disabled={!duePayment || duePayment.status === 'pending' || !duePayment.value || Number(duePayment.value) <= 0}>Pay</PayButton>
+                                        <PayButton onClick={handlePay} disabled={!duePayment || duePayment.status === 'pending'}>Pay</PayButton>
                                     </Col>
                                 </Row>
                             </SummaryWrapper>

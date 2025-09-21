@@ -31,24 +31,26 @@ const PaymentHistory: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 let paymentsRes = await getBillPayments(directusClient, bill.id)
-                if (bill?.status === 'confirmed') {
-                    paymentsRes = [
-                        {
-                            status: "upcoming",
-                            id: 0,
-                            bill: null,
-                            down_payment: false,
-                            due_date: bill.next_installment_date,
-                            paid_date: null,
-                            method: null,
-                            customer: null,
-                            value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
-                            cash_payment: null,
-                            agency: null
-                        },
-                        ...paymentsRes,
-                    ]
+                const hasUpcomingPayment = paymentsRes.some(payment => payment.status === 'upcoming')
+
+                if (!hasUpcomingPayment && bill?.next_installment_date) {
+                    const upcomingPayment: DirectusPayment = {
+                        status: "upcoming",
+                        id: 0,
+                        bill: null,
+                        down_payment: false,
+                        due_date: bill.next_installment_date,
+                        paid_date: null,
+                        method: null,
+                        customer: null,
+                        value: `${Number(bill.installments) - Number(bill.credit_amount ?? 0)}`,
+                        cash_payment: null,
+                        agency: null
+                    }
+
+                    paymentsRes = [upcomingPayment, ...paymentsRes]
                 }
+
                 setDataSource(paymentsRes)
             } else {
                 setDataSource([])
