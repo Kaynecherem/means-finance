@@ -214,7 +214,7 @@ const CustomerSummary = () => {
                     : null
             }
         }
-    ], [bill?.credit_amount, bill?.installments, handlePay])
+    ], [bill, handlePay])
     const getDueDuration = (date: string) => {
         const dueDate = moment(date).endOf('day')
 
@@ -315,7 +315,12 @@ const CustomerSummary = () => {
                                         </Col>
                                     }
                                     <Col span={24}>
-                                        <PayButton onClick={handlePay} disabled={!duePayment || duePayment.status === 'pending'}>Pay</PayButton>
+                                        <PayButton
+                                            onClick={() => handlePay()}
+                                            disabled={!duePayment || duePayment.status === 'pending'}
+                                        >
+                                            Pay
+                                        </PayButton>
                                     </Col>
                                 </Row>
                             </SummaryWrapper>
