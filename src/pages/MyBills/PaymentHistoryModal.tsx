@@ -1,8 +1,9 @@
 import LoadingOutlined from '@ant-design/icons/LoadingOutlined';
-import { message } from 'antd';
+import { Button, message } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import moment from 'moment';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CustomizedTable from '../../components/CustomisedTable';
 import CustomModal from '../../components/CustomModal';
 import { useDirectUs } from '../../components/DirectUs/DirectusContext';
@@ -20,6 +21,7 @@ const PaymentHistoryModal: React.FC<{
     const [dataSource, setDataSource] = useState<DirectusPayment[]>([])
     const [paymentsLoading, setPaymentsLoading] = useState(true)
     const { directusClient } = useDirectUs()
+    const navigate = useNavigate()
     const fetchPayments = useCallback(async () => {
         try {
             setPaymentsLoading(true)
@@ -39,6 +41,18 @@ const PaymentHistoryModal: React.FC<{
     useEffect(() => {
         fetchPayments()
     }, [fetchPayments])
+
+    const handlePayNow = useCallback((payment: DirectusPayment) => {
+        if (!payment || (payment.status ?? '').toLowerCase() === 'pending') {
+            return
+        }
+
+        navigate('/payment', {
+            state: {
+                duePayment: payment
+            }
+        })
+    }, [navigate])
 
     const columns: ColumnsType<DirectusPayment> = [
         {
@@ -63,6 +77,21 @@ const PaymentHistoryModal: React.FC<{
             render: (amount: string) => <BillAmountWrapper>
                 <div className='amount'>${Number(amount).toFixed(2)}</div>
             </BillAmountWrapper>
+        },
+        {
+            title: '',
+            key: 'action',
+            dataIndex: 'id',
+            align: 'right',
+            render: (_, record) => {
+                const normalizedStatus = (record.status ?? '').toLowerCase()
+
+                if (normalizedStatus === 'pending') {
+                    return null
+                }
+
+                return <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>
+            }
         }
     ]
 
