@@ -43,7 +43,7 @@ const CustomerSummary = () => {
         }
     }
     const selectUser = (user: CustomDirectusUser) => {
-        dispatch(updateCollect({ customer: user }))
+        dispatch(updateCollect({ customer: user, selectedPaymentId: null }))
         navigate('/agency/collect/customer-bills')
     }
     const handleNextClick = async ({ phone }: {

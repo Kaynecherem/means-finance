@@ -31,7 +31,8 @@ const CustomerBills = () => {
 
     const selectPolicy = useCallback((bill: DirectusBill) => {
         dispatch(updateCollect({
-            bill
+            bill,
+            selectedPaymentId: null
         }))
         navigate('/agency/collect/customer-summary')
     }, [dispatch, navigate])
