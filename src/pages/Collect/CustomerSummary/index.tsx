@@ -109,19 +109,10 @@ const CustomerSummary = () => {
             if (bill?.id) {
                 const directusPayments = await getBillPayments(directusClient, bill.id)
 
-                const paymentsWithStatus = directusPayments.map(payment => {
-                    const normalizedStatus = normalizePaymentStatus(payment)
-
-                    return {
-                        ...payment,
-                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
-                    }
-                })
-
-                const hasUpcomingPayment = paymentsWithStatus.some(payment => normalizePaymentStatus(payment) === 'upcoming')
+                const hasUpcomingPayment = directusPayments.some(payment => normalizePaymentStatus(payment) === 'upcoming')
                 const upcomingPayment = !hasUpcomingPayment && bill.next_installment_date
                     ? {
-                        status: "upcoming" as DirectusPayment['status'],
+                        status: null,
                         id: -1,
                         bill: null,
                         down_payment: false,
@@ -136,8 +127,8 @@ const CustomerSummary = () => {
                     : null
 
                 const normalizedPayments = upcomingPayment
-                    ? [upcomingPayment, ...paymentsWithStatus]
-                    : paymentsWithStatus
+                    ? [upcomingPayment, ...directusPayments]
+                    : directusPayments
 
                 const targetPaymentId = locationPaymentId ?? selectedPaymentId ?? null
                 const selectedPayment = targetPaymentId
@@ -154,12 +145,19 @@ const CustomerSummary = () => {
                     }
 
                     const normalizedStatus = normalizePaymentStatus(payment);
+                    const rawStatus = (payment.status ?? '').trim().toLowerCase();
+                    const today = moment();
+                    const dueDate = payment.due_date ? moment(payment.due_date) : null;
+                    const isFutureDueDate = dueDate ? dueDate.isAfter(today, 'day') : false;
 
-                    if (!normalizedStatus || normalizedStatus === 'pending' || normalizedStatus === 'paid') {
+                    if (normalizedStatus === 'pending' || normalizedStatus === 'paid') {
                         return false;
                     }
 
-                    return normalizedStatus === 'missed' || normalizedStatus === 'upcoming';
+                    return normalizedStatus === 'missed'
+                        || normalizedStatus === 'upcoming'
+                        || rawStatus.length === 0
+                        || isFutureDueDate;
                 };
 
                 const payablePayment = isPayable(selectedPayment)

@@ -28,15 +28,7 @@ const PaymentHistoryModal: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 const paymentsRes = await getBillPayments(directusClient, bill.id)
-                const normalizedPayments = paymentsRes.map(payment => {
-                    const normalizedStatus = normalizePaymentStatus(payment)
-
-                    return {
-                        ...payment,
-                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
-                    }
-                })
-                setDataSource(normalizedPayments)
+                setDataSource(paymentsRes)
             } else {
                 setDataSource([])
             }
@@ -85,7 +77,17 @@ const PaymentHistoryModal: React.FC<{
             align: 'right',
             render: (_: number, record) => {
                 const status = normalizePaymentStatus(record)
-                const canPayNow = record.id > 0 && (status === 'missed' || status === 'upcoming')
+                const rawStatus = (record.status ?? '').trim().toLowerCase()
+                const today = moment()
+                const dueDate = record.due_date ? moment(record.due_date) : null
+                const isFutureDueDate = dueDate ? dueDate.isAfter(today, 'day') : false
+                const canPayNow = record.id > 0
+                    && (
+                        status === 'missed'
+                        || status === 'upcoming'
+                        || rawStatus.length === 0
+                        || isFutureDueDate
+                    )
 
                 if (!canPayNow) {
                     return null

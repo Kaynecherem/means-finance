@@ -32,20 +32,12 @@ const PaymentHistory: React.FC<{
             setPaymentsLoading(true)
             if (bill?.id) {
                 const paymentsRes = await getBillPayments(directusClient, bill.id)
-                const normalizedPayments = paymentsRes.map(payment => {
-                    const normalizedStatus = normalizePaymentStatus(payment)
-
-                    return {
-                        ...payment,
-                        status: normalizedStatus ?? (payment.status ? payment.status.toLowerCase() : payment.status)
-                    }
-                })
-                const hasUpcomingPayment = normalizedPayments.some(payment => normalizePaymentStatus(payment) === 'upcoming')
+                const hasUpcomingPayment = paymentsRes.some(payment => normalizePaymentStatus(payment) === 'upcoming')
 
                 const data = (!hasUpcomingPayment && bill?.next_installment_date)
                     ? [
                         {
-                            status: "upcoming",
+                            status: null,
                             id: -1,
                             bill: null,
                             down_payment: false,
@@ -57,9 +49,9 @@ const PaymentHistory: React.FC<{
                             cash_payment: null,
                             agency: null
                         } as DirectusPayment,
-                        ...normalizedPayments
+                        ...paymentsRes
                     ]
-                    : normalizedPayments
+                    : paymentsRes
 
                 setDataSource(data)
             } else {
@@ -142,8 +134,17 @@ const PaymentHistory: React.FC<{
             align: 'right',
             render: (_, record) => {
                 const status = normalizePaymentStatus(record)
+                const rawStatus = (record.status ?? '').trim().toLowerCase()
+                const today = moment()
+                const dueDate = record.due_date ? moment(record.due_date) : null
+                const isFutureDueDate = dueDate ? dueDate.isAfter(today, 'day') : false
                 const canPayNow = record.id > 0
-                    && (status === 'missed' || status === 'upcoming')
+                    && (
+                        status === 'missed'
+                        || status === 'upcoming'
+                        || rawStatus.length === 0
+                        || isFutureDueDate
+                    )
 
                 return canPayNow
                     ? <Button type='link' size='small' onClick={() => handlePayNow(record)}>Pay now</Button>
