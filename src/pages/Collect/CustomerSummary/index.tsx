@@ -1,8 +1,8 @@
 import LoadingOutlined from '@ant-design/icons/LoadingOutlined'
-import { Col, message, Row, Skeleton } from "antd"
+import { Button, Col, message, Row, Skeleton } from "antd"
 import { ColumnsType } from "antd/es/table"
 import moment from "moment"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { LuDollarSign } from "react-icons/lu"
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useNavigate } from "react-router-dom"
@@ -37,38 +37,6 @@ const CustomerSummary = () => {
     const [statusPayment, setStatusPayment] = useState<DirectusPayment | null>(null);
     const { directusClient } = useDirectUs()
     const dispatch = useDispatch()
-    const columns: ColumnsType<DirectusPayment> = [
-        {
-            title: "Status",
-            key: 'status',
-            dataIndex: "status",
-            render: (text: string) => <StatusWrapper status={text}>{text}</StatusWrapper>,
-            align: "left"
-        },
-        {
-            title: "Due date",
-            key: 'dueDate',
-            dataIndex: "due_date",
-            render: (text: string) => moment(text).format('MM/DD/YY'),
-            align: "center"
-        },
-        {
-            title: 'Amount',
-            key: "amount",
-            dataIndex: "value",
-            align: 'right',
-            render: (amount: string, record) => <div>
-                ${Number(amount).toFixed(2)}
-                {record.method === 'cash' &&
-                    <TableHelperText>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</TableHelperText>
-                }
-                {bill && record.status === 'upcoming' && Number(bill.credit_amount ?? 0) > 0 &&
-                    <TableHelperText>{`Credit - $${Number(bill.credit_amount).toFixed(2)}`}</TableHelperText>
-
-                }
-            </div>
-        }
-    ]
     const fetchVins = useCallback(async () => {
         try {
             setVinsLoading(true);
@@ -173,7 +141,13 @@ const CustomerSummary = () => {
         fetchPayments()
     }, [fetchPayments])
 
-    const handlePay = async () => {
+    const handlePay = useCallback(async (payment?: DirectusPayment | null) => {
+        const targetPayment = payment ?? duePayment
+
+        if (!targetPayment || targetPayment.id <= 0) {
+            return
+        }
+
         try {
             if (customer?.id && bill?.agency) {
                 const agencyId = typeof bill.agency === 'object' ? (bill.agency as DirectusAgency).id : bill.agency
@@ -182,16 +156,65 @@ const CustomerSummary = () => {
                     agency: String(agencyId)
                 })
             }
-            dispatch(updateCollect({ selectedPaymentId: duePayment?.id ?? null }))
+            dispatch(updateCollect({ selectedPaymentId: targetPayment.id }))
             navigate('/agency/collect/payment', {
                 state: {
-                    duePayment
+                    duePayment: targetPayment
                 }
             })
         } catch (error) {
             message.error((error as InternalErrors).message)
         }
-    }
+    }, [bill?.agency, customer?.id, directusClient, dispatch, duePayment, navigate])
+
+    const columns: ColumnsType<DirectusPayment> = useMemo(() => [
+        {
+            title: "Status",
+            key: 'status',
+            dataIndex: "status",
+            render: (text: string) => <StatusWrapper status={text}>{text}</StatusWrapper>,
+            align: "left"
+        },
+        {
+            title: "Due date",
+            key: 'dueDate',
+            dataIndex: "due_date",
+            render: (text: string) => moment(text).format('MM/DD/YY'),
+            align: "center"
+        },
+        {
+            title: 'Amount',
+            key: "amount",
+            dataIndex: "value",
+            align: 'right',
+            render: (amount: string, record) => <div>
+                ${Number(amount).toFixed(2)}
+                {record.method === 'cash' &&
+                    <TableHelperText>{`Cash Collected - $${Number(record.cash_payment).toFixed(2)}`}</TableHelperText>
+                }
+                {bill && record.status === 'upcoming' && Number(bill.credit_amount ?? 0) > 0 &&
+                    <TableHelperText>{`Credit - $${Number(bill.credit_amount).toFixed(2)}`}</TableHelperText>
+
+                }
+            </div>
+        },
+        {
+            title: '',
+            key: 'action',
+            dataIndex: 'id',
+            align: 'right',
+            render: (_: number, record) => {
+                const normalizedStatus = (record.status ?? '').toLowerCase()
+                const canPayNow = record.id > 0
+                    && normalizedStatus !== 'pending'
+                    && (normalizedStatus === 'missed' || normalizedStatus === 'upcoming')
+
+                return canPayNow
+                    ? <Button type='link' size='small' onClick={() => handlePay(record)}>Pay now</Button>
+                    : null
+            }
+        }
+    ], [bill?.credit_amount, bill?.installments, handlePay])
     const getDueDuration = (date: string) => {
         const dueDate = moment(date).endOf('day')
 

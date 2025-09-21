@@ -43,7 +43,7 @@ describe('DeluxePayment Page', () => {
             auth: {
                 agency: { deluxePartnerToken: TOKEN },
             },
-            quote: {},
+            quote: { isRenewal: false },
         });
         (useNavigate as jest.Mock).mockReturnValue(navigate);
         navigate.mockClear();
@@ -67,6 +67,25 @@ describe('DeluxePayment Page', () => {
         expect(screen.getByRole('button', { name: /Skip/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Next/i })).toBeDisabled();
         expect(screen.getByRole('button', { name: /Start Over/i })).toBeInTheDocument();
+    });
+
+    it('redirects to customer info when renewing a bill', () => {
+        store = mockStore({
+            auth: {
+                agency: { deluxePartnerToken: TOKEN },
+            },
+            quote: { isRenewal: true },
+        });
+
+        render(
+            <ThemeProvider theme={mockTheme}>
+                <Provider store={store}>
+                    <DeluxePayment />
+                </Provider>
+            </ThemeProvider>
+        );
+
+        expect(navigate).toHaveBeenCalledWith('/agency/quote/customer-info', { replace: true });
     });
 
     it('enables next button on success message and navigates when clicked', async () => {

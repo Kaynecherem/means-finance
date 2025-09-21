@@ -81,6 +81,25 @@ const Manage = () => {
                     return CustomerPayFrequency.WEEKLY
             }
         }
+        const customer = castCustomer(bill.customer);
+        if (customer?.deluxe_customer_id || customer?.deluxe_vault_id) {
+            try {
+                sessionStorage.setItem('deluxeData', JSON.stringify({
+                    data: {
+                        customerId: customer?.deluxe_customer_id,
+                        vaultId: customer?.deluxe_vault_id,
+                    }
+                }))
+            } catch (error) {
+                console.error(error)
+            }
+        } else {
+            try {
+                sessionStorage.removeItem('deluxeData')
+            } catch (error) {
+                console.error(error)
+            }
+        }
         dispatch(updateQuote({
             quoteType: bill.bill_type,
             quoteFrequency: bill.bill_recurrency,
@@ -91,12 +110,17 @@ const Manage = () => {
             weekDays: bill.weekly !== null ? Number(bill.weekly) : null,
             customerPayFrequencyDays: getPayDays(bill),
             isCustomerGetPaidOnWeekend: bill.paid_on_weekends,
-            customerEmail: castCustomer(bill.customer)?.email,
-            customerFirstName: castCustomer(bill.customer)?.first_name,
-            customerLastName: castCustomer(bill.customer)?.last_name,
-            customerPhone: castCustomer(bill.customer)?.phone,
+            customerEmail: customer?.email ?? null,
+            customerFirstName: customer?.first_name ?? null,
+            customerLastName: customer?.last_name ?? null,
+            customerPhone: customer?.phone ?? null,
             policyId: bill.policy_id,
-            vins
+            vins,
+            customerSelection: customer ? 'existing' : null,
+            existingCustomerId: customer?.id ?? null,
+            existingCustomerDeluxeCustomerId: customer?.deluxe_customer_id ?? null,
+            existingCustomerDeluxeVaultId: customer?.deluxe_vault_id ?? null,
+            isRenewal: true
         }))
         navigate('/agency/quote/bill-type')
     }

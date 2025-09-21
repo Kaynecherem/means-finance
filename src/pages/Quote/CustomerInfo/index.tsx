@@ -218,7 +218,7 @@ const CustomerInfo: React.FC = () => {
                     })))
                 }
 
-                dispatch(updateQuote({ ...values, id: bill.id }))
+                dispatch(updateQuote({ ...values, id: bill.id, isRenewal: false }))
 
                 navigate('/agency/quote/summary')
             }
