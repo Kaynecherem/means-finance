@@ -10,6 +10,7 @@ import { updateAgency } from '../../../utils/redux/slices/authSlice';
 import { RootState } from '../../../utils/redux/store';
 import { getAgencyDeluxePartnerToken } from '../../../utils/apis/directus';
 import { PageHeader } from '../../style';
+import type { StoreQuote } from '../../../utils/types/common';
 
 const DeluxePayment: React.FC = () => {
     const navigate = useNavigate();
@@ -40,13 +41,14 @@ const DeluxePayment: React.FC = () => {
     };
 
     const handleNextClick = () => {
-        dispatch(updateQuote({ customerSelection: 'new' }));
+        const nextQuoteUpdate: Partial<StoreQuote> = { customerSelection: 'new' };
+        dispatch(updateQuote(nextQuoteUpdate));
         navigate('/agency/quote/customer-info');
     };
 
     const handleSkipClick = () => {
         sessionStorage.removeItem('deluxeData');
-        dispatch(updateQuote({
+        const skipQuoteUpdate: Partial<StoreQuote> = {
             customerSelection: 'existing',
             existingCustomerId: null,
             existingCustomerDeluxeCustomerId: null,
@@ -55,7 +57,8 @@ const DeluxePayment: React.FC = () => {
             customerFirstName: null,
             customerLastName: null,
             customerPhone: null,
-        }));
+        };
+        dispatch(updateQuote(skipQuoteUpdate));
         navigate('/agency/quote/existing-customer');
     };
 
