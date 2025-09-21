@@ -77,16 +77,11 @@ const PaymentHistoryModal: React.FC<{
             align: 'right',
             render: (_: number, record) => {
                 const status = normalizePaymentStatus(record)
-                const rawStatus = (record.status ?? '').trim().toLowerCase()
-                const today = moment()
-                const dueDate = record.due_date ? moment(record.due_date) : null
-                const isFutureDueDate = dueDate ? dueDate.isAfter(today, 'day') : false
                 const canPayNow = record.id > 0
                     && (
                         status === 'missed'
                         || status === 'upcoming'
-                        || rawStatus.length === 0
-                        || isFutureDueDate
+                        || status === null
                     )
 
                 if (!canPayNow) {

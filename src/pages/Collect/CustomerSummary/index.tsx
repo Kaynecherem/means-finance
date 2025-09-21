@@ -145,10 +145,6 @@ const CustomerSummary = () => {
                     }
 
                     const normalizedStatus = normalizePaymentStatus(payment);
-                    const rawStatus = (payment.status ?? '').trim().toLowerCase();
-                    const today = moment();
-                    const dueDate = payment.due_date ? moment(payment.due_date) : null;
-                    const isFutureDueDate = dueDate ? dueDate.isAfter(today, 'day') : false;
 
                     if (normalizedStatus === 'pending' || normalizedStatus === 'paid') {
                         return false;
@@ -156,8 +152,7 @@ const CustomerSummary = () => {
 
                     return normalizedStatus === 'missed'
                         || normalizedStatus === 'upcoming'
-                        || rawStatus.length === 0
-                        || isFutureDueDate;
+                        || normalizedStatus === null;
                 };
 
                 const payablePayment = isPayable(selectedPayment)
