@@ -24,6 +24,7 @@ export type StoreQuote = {
     existingCustomerId: string | null
     existingCustomerDeluxeCustomerId: string | null
     existingCustomerDeluxeVaultId: string | null
+    isRenewal: boolean
 }
 
 export type StoreCollect = {

@@ -18,9 +18,19 @@ const DeluxePayment: React.FC = () => {
     const [isPaymentAdded, setIsPaymentAdded] = useState(false);
     const deluxeToken = useSelector(({ auth }: RootState) => auth.agency?.deluxePartnerToken);
     const agencyId = useSelector(({ auth }: RootState) => auth.agency?.id);
+    const isRenewal = useSelector(({ quote }: RootState) => quote.isRenewal);
     const { directusClient } = useDirectUs();
 
     useEffect(() => {
+        if (isRenewal) {
+            navigate('/agency/quote/customer-info', { replace: true });
+        }
+    }, [isRenewal, navigate]);
+
+    useEffect(() => {
+        if (isRenewal) {
+            return;
+        }
         const fetchToken = async () => {
             if (!deluxeToken && agencyId) {
                 try {
@@ -32,7 +42,7 @@ const DeluxePayment: React.FC = () => {
             }
         }
         fetchToken();
-    }, [deluxeToken, agencyId, directusClient, dispatch]);
+    }, [deluxeToken, agencyId, directusClient, dispatch, isRenewal]);
 
     const handleResetClick = () => {
         sessionStorage.removeItem('deluxeData');
@@ -70,6 +80,9 @@ const DeluxePayment: React.FC = () => {
     };
 
     useEffect(() => {
+        if (isRenewal) {
+            return;
+        }
         const handleMessage = (e: MessageEvent) => {
             const data = e.data as any;
             const isVaultMessage =
@@ -88,7 +101,7 @@ const DeluxePayment: React.FC = () => {
         };
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, [navigate]);
+    }, [isRenewal, navigate]);
 
     const iframeDoc = useMemo(() => {
         return `<!DOCTYPE html>
@@ -142,6 +155,10 @@ const DeluxePayment: React.FC = () => {
 </body>
 </html>`;
     }, [deluxeToken]);
+
+    if (isRenewal) {
+        return null;
+    }
 
     return (
         <Row gutter={[0, 20]} justify={"center"}>
