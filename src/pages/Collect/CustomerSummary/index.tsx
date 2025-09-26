@@ -210,7 +210,7 @@ const CustomerSummary = () => {
                     && (normalizedStatus === 'missed' || normalizedStatus === 'upcoming')
 
                 return canPayNow
-                    ? <Button type='link' size='small' onClick={() => handlePay(record)}>Pay now</Button>
+                    ? <Button type='link' size='small' onClick={() => { void handlePay(record) }}>Pay now</Button>
                     : null
             }
         }
@@ -316,7 +316,7 @@ const CustomerSummary = () => {
                                     }
                                     <Col span={24}>
                                         <PayButton
-                                            onClick={() => handlePay()}
+                                            onClick={() => { void handlePay() }}
                                             disabled={!duePayment || duePayment.status === 'pending'}
                                         >
                                             Pay
